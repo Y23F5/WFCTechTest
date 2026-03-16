@@ -1,0 +1,18 @@
+{
+  "name": "WFC.Editor",
+  "rootNamespace": "WFCTechTest.WFC.Editor",
+  "references": [
+    "WFC.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

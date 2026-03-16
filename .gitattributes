@@ -1,0 +1,30 @@
+# Unity YAML files — force text mode so Unity's merge tool works
+*.cs        text eol=lf
+*.shader    text eol=lf
+*.cginc     text eol=lf
+*.hlsl      text eol=lf
+*.glsl      text eol=lf
+*.compute   text eol=lf
+*.md        text eol=lf
+*.json      text eol=lf
+*.asmdef    text eol=lf
+*.asmref    text eol=lf
+
+# Unity asset files — treat as text with Unity's YAML merge driver
+*.unity     merge=unityyamlmerge eol=lf
+*.prefab    merge=unityyamlmerge eol=lf
+*.asset     merge=unityyamlmerge eol=lf
+*.meta      merge=unityyamlmerge eol=lf
+*.controller merge=unityyamlmerge eol=lf
+
+# Binary files — do not diff or merge as text
+*.png       binary
+*.jpg       binary
+*.gif       binary
+*.mp3       binary
+*.wav       binary
+*.ogg       binary
+*.fbx       binary
+*.obj       binary
+*.ttf       binary
+*.otf       binary

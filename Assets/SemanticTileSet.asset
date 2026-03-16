@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a43c8ba9363a85342ba8c7d50cb5a2af, type: 3}
+  m_Name: SemanticTileSet
+  m_EditorClassIdentifier: 
+  definitions:
+  - Archetype: 0
+    Weight: 9.8
+    TargetRatio: 0.61
+    Height: 0
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 1
+    Weight: 0.5
+    TargetRatio: 0.03
+    Height: 0
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 1
+  - Archetype: 2
+    Weight: 0
+    TargetRatio: 0
+    Height: 4
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 1
+    IsInterestAnchor: 0
+  - Archetype: 3
+    Weight: 0
+    TargetRatio: 0
+    Height: 4
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 1
+    IsInterestAnchor: 0
+  - Archetype: 4
+    Weight: 0.96
+    TargetRatio: 0.095
+    Height: 1
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 5
+    Weight: 0.86
+    TargetRatio: 0.065
+    Height: 1
+    FootprintWidth: 2
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 6
+    Weight: 0.38
+    TargetRatio: 0.035
+    Height: 2
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 7
+    Weight: 0.42
+    TargetRatio: 0.035
+    Height: 2
+    FootprintWidth: 2
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 8
+    Weight: 0.12
+    TargetRatio: 0.01
+    Height: 3
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 9
+    Weight: 0.28
+    TargetRatio: 0.022
+    Height: 2
+    FootprintWidth: 2
+    FootprintDepth: 2
+    BoundaryOnly: 0
+    IsInterestAnchor: 0

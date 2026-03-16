@@ -1,0 +1,21 @@
+{
+  "name": "WFC.Tests.Editor",
+  "rootNamespace": "WFCTechTest.WFC.Tests.Editor",
+  "references": [
+    "WFC.Runtime"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

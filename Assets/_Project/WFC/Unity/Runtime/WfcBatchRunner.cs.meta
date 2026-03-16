@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: ffa1b70cf8c78d947bbd7ade25817a98
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - generationConfig: {fileID: 11400000, guid: d7cde3f52c0554f478810153b6d27002, type: 2}
+  - semanticTileSet: {fileID: 11400000, guid: 0af64ebe229e4834bbee78c09b6341c5, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
