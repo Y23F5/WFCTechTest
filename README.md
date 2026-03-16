@@ -1,73 +1,73 @@
-# WFC Tech Test — Unity 3D Procedural Map Generator
+# WFC Tech Test — Unity 3D 程序化地图生成器
 
-A Unity 3D project implementing a **Semantic Wave Function Collapse (WFC)** pipeline for generating playable, blockout-style multiplayer combat maps.
+基于 Unity 3D 的**语义 Wave Function Collapse（WFC）**管线，用于生成可玩的 blockout 风格多人战斗地图。
 
-## Overview
+## 项目概述
 
-This system goes beyond a vanilla WFC solver. It uses a four-layer architecture to guarantee that every generated map is structurally sound and navigable:
+本系统不只是一个普通的 WFC 求解器，而是采用四层架构来确保每张生成的地图在结构上合理且可供玩家通行：
 
-| Layer | Responsibility |
+| 层级 | 职责 |
 |---|---|
-| **Core** | Movement rules, grid primitives, occupancy modelling |
-| **Semantic** | High-level archetype constraints (Floor, Wall, Portal, Stair…) |
-| **Compile** | Semantic → voxel grid translation |
-| **Runtime** | Unity MonoBehaviour wiring, prefab spawning, batch runner |
+| **Core** | 移动规则、网格基本类型、占用图建模 |
+| **Semantic** | 高层语义原型约束（Floor、Wall、Portal、Stair……） |
+| **Compile** | 语义网格 → 体素网格转译 |
+| **Runtime** | Unity MonoBehaviour 接入、Prefab 生成、批量运行器 |
 
-The generator supports:
-- Deterministic reproduction via seed
-- Multi-floor layouts (up to 3 levels)
-- Obstacle variety (1–3 cell heights, variable widths)
-- Portal / archway structures
-- Stair and ramp connectors
-- Post-generation connectivity validation
-- In-editor tuning window and fuzz-test runner
+生成器支持：
+- 通过种子确定性复现
+- 多层楼层布局（最多 3 层）
+- 多样化障碍物（1–3 格高度、可变宽度）
+- 门洞 / 拱门结构
+- 楼梯与坡道连接
+- 生成后连通性自动验证
+- 编辑器内参数调节窗口与 Fuzz 压力测试工具
 
-## Project Structure
+## 目录结构
 
 ```
 Assets/
 ├── _Project/
 │   └── WFC/
-│       ├── Core/           # Grid types, movement rules, solver interface
-│       ├── Semantic/       # Semantic grid & adjacency rules
+│       ├── Core/           # 网格类型、移动规则、求解器接口
+│       ├── Semantic/       # 语义网格与邻接规则
 │       ├── Compile/        # SemanticToVoxelCompiler
-│       ├── Validation/     # ConnectivityValidator, GenerationValidator
-│       ├── Runtime/        # WfcGenerationPipeline, WfcGenerationRunner, BatchRunner
-│       ├── Data/           # ScriptableObject assets (TileSet, GenerationConfig)
-│       ├── Diagnostics/    # GenerationReport, BatchGenerationReport
-│       └── Editor/         # WfcTuningWindow, WfcFuzzTestWindow, WfcAssetFactory
+│       ├── Validation/     # ConnectivityValidator、GenerationValidator
+│       ├── Runtime/        # WfcGenerationPipeline、WfcGenerationRunner、BatchRunner
+│       ├── Data/           # ScriptableObject 资产（TileSet、GenerationConfig）
+│       ├── Diagnostics/    # GenerationReport、BatchGenerationReport
+│       └── Editor/         # WfcTuningWindow、WfcFuzzTestWindow、WfcAssetFactory
 ├── Tests/
-│   └── Editor/             # EditMode unit tests (NUnit + Unity Test Framework)
+│   └── Editor/             # EditMode 单元测试（NUnit + Unity Test Framework）
 ├── Scenes/
 ├── Prefabs/
-└── Settings/               # URP render pipeline settings
+└── Settings/               # URP 渲染管线设置
 Packages/
 ProjectSettings/
 ```
 
-## Requirements
+## 环境要求
 
-- **Unity** 2023.2.x (URP)
-- **Packages**: Universal Render Pipeline 16, Unity Test Framework 1.3, AI Navigation 2.0, Timeline 1.8
+- **Unity** 2023.2.x（URP）
+- **依赖包**：Universal Render Pipeline 16、Unity Test Framework 1.3、AI Navigation 2.0、Timeline 1.8
 
-## Getting Started
+## 快速开始
 
-1. Clone the repo and open the project in Unity 2023.2.x.
-2. Open `Assets/Scenes/` and load the main scene.
-3. In the Unity menu, go to **WFC → Tuning Window** to adjust generation parameters.
-4. Press **Generate** (or run the scene) to produce a map.
-5. Use **WFC → Fuzz Test** to run batch generations and inspect the pass/fail report.
+1. 克隆仓库，用 Unity 2023.2.x 打开项目。
+2. 打开 `Assets/Scenes/` 并加载主场景。
+3. 在 Unity 菜单中选择 **WFC → Tuning Window** 调整生成参数。
+4. 点击 **Generate**（或直接运行场景）生成地图。
+5. 使用 **WFC → Fuzz Test** 进行批量生成并查看通过 / 失败报告。
 
-## Running Tests
+## 运行测试
 
-Open **Window → General → Test Runner**, select **EditMode**, and click **Run All**.
+打开 **Window → General → Test Runner**，选择 **EditMode**，点击 **Run All**。
 
-Tests cover:
-- `SemanticWfcSolverTests` — solver constraint propagation
-- `SemanticToVoxelCompilerTests` — semantic-to-voxel translation
-- `ConnectivityValidatorTests` — graph reachability checks
-- `WfcGenerationPipelineTests` — end-to-end pipeline integration
+测试覆盖范围：
+- `SemanticWfcSolverTests` — 求解器约束传播
+- `SemanticToVoxelCompilerTests` — 语义到体素转译
+- `ConnectivityValidatorTests` — 图可达性检查
+- `WfcGenerationPipelineTests` — 端到端管线集成
 
-## Architecture Notes
+## 架构说明
 
-The core solver (`IWfcSolver`) is a pure C# interface with no Unity dependencies, making it independently unit-testable. Unity-specific concerns (MonoBehaviours, prefab spawning, ScriptableObjects) are isolated in the `Unity/Runtime` and `Editor` sub-namespaces.
+核心求解器（`IWfcSolver`）是纯 C# 接口，不依赖任何 Unity API，可独立进行单元测试。所有 Unity 相关逻辑（MonoBehaviour、Prefab 生成、ScriptableObject）均隔离在 `Unity/Runtime` 和 `Editor` 子命名空间中。
