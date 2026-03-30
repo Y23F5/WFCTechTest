@@ -47,16 +47,18 @@ namespace WFCTechTest.WFC.Data
         {
             return new List<SemanticArchetypeDefinition>
             {
-                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.Open, Weight = 9.8f, TargetRatio = 0.61f },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.Open, Weight = 7.8f, TargetRatio = 0.46f },
                 new SemanticArchetypeDefinition { Archetype = SemanticArchetype.InterestAnchor, Weight = 0.5f, TargetRatio = 0.03f, IsInterestAnchor = true },
                 new SemanticArchetypeDefinition { Archetype = SemanticArchetype.BoundaryWall, Weight = 0f, TargetRatio = 0f, Height = 4, BoundaryOnly = true },
                 new SemanticArchetypeDefinition { Archetype = SemanticArchetype.BoundaryCorner, Weight = 0f, TargetRatio = 0f, Height = 4, BoundaryOnly = true },
-                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.LowCover1x1, Weight = 0.96f, TargetRatio = 0.095f, Height = 1 },
-                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.LowCover1x2, Weight = 0.86f, TargetRatio = 0.065f, Height = 1, FootprintWidth = 2 },
-                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.HighCover1x1, Weight = 0.38f, TargetRatio = 0.035f, Height = 2 },
-                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.HighCover1x2, Weight = 0.42f, TargetRatio = 0.035f, Height = 2, FootprintWidth = 2 },
-                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.Tower1x1, Weight = 0.12f, TargetRatio = 0.01f, Height = 3 },
-                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.Block2x2, Weight = 0.28f, TargetRatio = 0.022f, Height = 2, FootprintWidth = 2, FootprintDepth = 2 }
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.LowCoverSparse, Weight = 1.15f, TargetRatio = 0.11f, Height = 1 },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.LowCoverDense, Weight = 0.95f, TargetRatio = 0.08f, Height = 1 },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.HighCoverSparse, Weight = 0.74f, TargetRatio = 0.07f, Height = 2 },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.HighCoverDense, Weight = 0.56f, TargetRatio = 0.05f, Height = 2 },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.TowerSparse, Weight = 0.38f, TargetRatio = 0.03f, Height = 3 },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.TowerDense, Weight = 0.22f, TargetRatio = 0.02f, Height = 3 },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.BlockerSparse, Weight = 0.44f, TargetRatio = 0.03f, Height = 2 },
+                new SemanticArchetypeDefinition { Archetype = SemanticArchetype.BlockerDense, Weight = 0.26f, TargetRatio = 0.02f, Height = 2 }
             };
         }
 

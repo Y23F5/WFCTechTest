@@ -37,6 +37,11 @@ namespace WFCTechTest.WFC.Core
         Tower,
 
         /// <summary>
+        /// Solid blocker cube.
+        /// </summary>
+        Blocker,
+
+        /// <summary>
         /// Spawn anchor marker cube category for diagnostics only.
         /// </summary>
         InterestAnchor
