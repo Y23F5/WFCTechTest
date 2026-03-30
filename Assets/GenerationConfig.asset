@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b722bdb791506b04db5df8ae049cc531, type: 3}
   m_Name: GenerationConfig
   m_EditorClassIdentifier: 
+  mapCenter: {x: 0, y: 0, z: 0}
   width: 48
   height: 8
   depth: 48
@@ -20,10 +21,14 @@ MonoBehaviour:
   interestAnchorCount: 4
   maxJumpHeight: 1.1
   maxJumpDistance: 2.1
-  coverageMetric: 1
-  minGroundCoverage: 0.7
-  maxGroundCoverage: 0.9
+  coverageMetric: 0
+  minGroundCoverage: 0.55
+  maxGroundCoverage: 0.65
   minLargestComponentRatio: 0.85
+  lowCoverDenseRatio: 0.42
+  highCoverDenseRatio: 0.48
+  towerDenseRatio: 0.35
+  blockerDenseRatio: 0.55
   quickBatchSeeds: 20
   standardBatchSeeds: 100
   stressBatchSeeds: 500

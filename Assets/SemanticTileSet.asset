@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   definitions:
   - Archetype: 0
-    Weight: 9.8
-    TargetRatio: 0.61
+    Weight: 7.8
+    TargetRatio: 0.46
     Height: 0
     FootprintWidth: 1
     FootprintDepth: 1
@@ -46,50 +46,66 @@ MonoBehaviour:
     BoundaryOnly: 1
     IsInterestAnchor: 0
   - Archetype: 4
-    Weight: 0.96
-    TargetRatio: 0.095
+    Weight: 1.15
+    TargetRatio: 0.11
     Height: 1
     FootprintWidth: 1
     FootprintDepth: 1
     BoundaryOnly: 0
     IsInterestAnchor: 0
   - Archetype: 5
-    Weight: 0.86
-    TargetRatio: 0.065
+    Weight: 0.95
+    TargetRatio: 0.08
     Height: 1
-    FootprintWidth: 2
+    FootprintWidth: 1
     FootprintDepth: 1
     BoundaryOnly: 0
     IsInterestAnchor: 0
   - Archetype: 6
-    Weight: 0.38
-    TargetRatio: 0.035
+    Weight: 0.74
+    TargetRatio: 0.07
     Height: 2
     FootprintWidth: 1
     FootprintDepth: 1
     BoundaryOnly: 0
     IsInterestAnchor: 0
   - Archetype: 7
-    Weight: 0.42
-    TargetRatio: 0.035
+    Weight: 0.56
+    TargetRatio: 0.05
     Height: 2
-    FootprintWidth: 2
+    FootprintWidth: 1
     FootprintDepth: 1
     BoundaryOnly: 0
     IsInterestAnchor: 0
   - Archetype: 8
-    Weight: 0.12
-    TargetRatio: 0.01
+    Weight: 0.38
+    TargetRatio: 0.03
     Height: 3
     FootprintWidth: 1
     FootprintDepth: 1
     BoundaryOnly: 0
     IsInterestAnchor: 0
   - Archetype: 9
-    Weight: 0.28
-    TargetRatio: 0.022
+    Weight: 0.22
+    TargetRatio: 0.02
+    Height: 3
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 10
+    Weight: 0.44
+    TargetRatio: 0.03
     Height: 2
-    FootprintWidth: 2
-    FootprintDepth: 2
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BoundaryOnly: 0
+    IsInterestAnchor: 0
+  - Archetype: 11
+    Weight: 0.26
+    TargetRatio: 0.02
+    Height: 2
+    FootprintWidth: 1
+    FootprintDepth: 1
     BoundaryOnly: 0
     IsInterestAnchor: 0

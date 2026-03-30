@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c43a818d4004dcf4d88c9213b6cb24f1, type: 3}
+  m_Name: PrefabRegistry
+  m_EditorClassIdentifier: 
+  entries:
+  - Type: 0
+    DisplayName: Placeholder Index 0
+    Prefab: {fileID: 4699728453376706603, guid: 58fe5e86ddc5919469dc20a66a61f074,
+      type: 3}
+    AllowRandomYaw: 0
+    UsePlaceholder: 1
+    EnabledForAutoGeneration: 1
+    SemanticClass: 1
+    FootprintWidth: 1
+    FootprintDepth: 1
+    LogicalHeightCells: 1
+    Weight: 1
+    SparseWeight: 1.18
+    DenseWeight: 0.92
+    MinCount: 0
+    MaxCount: 0
+    CanAppearNearBoundary: 1
+    CanAppearInCenter: 1
+    RequiresClearance: 0
+    ClearanceRadius: 0
+    AllowedHeightMask: -1
+  - Type: 1
+    DisplayName: Placeholder Index 1
+    Prefab: {fileID: 4699728453376706603, guid: 58fe5e86ddc5919469dc20a66a61f074,
+      type: 3}
+    AllowRandomYaw: 0
+    UsePlaceholder: 1
+    EnabledForAutoGeneration: 1
+    SemanticClass: 2
+    FootprintWidth: 1
+    FootprintDepth: 1
+    LogicalHeightCells: 1
+    Weight: 1
+    SparseWeight: 0.9
+    DenseWeight: 1.2
+    MinCount: 0
+    MaxCount: 0
+    CanAppearNearBoundary: 1
+    CanAppearInCenter: 1
+    RequiresClearance: 0
+    ClearanceRadius: 0
+    AllowedHeightMask: -1
+  - Type: 2
+    DisplayName: Placeholder Index 2
+    Prefab: {fileID: 4699728453376706603, guid: 58fe5e86ddc5919469dc20a66a61f074,
+      type: 3}
+    AllowRandomYaw: 0
+    UsePlaceholder: 1
+    EnabledForAutoGeneration: 1
+    SemanticClass: 3
+    FootprintWidth: 1
+    FootprintDepth: 1
+    LogicalHeightCells: 1
+    Weight: 1
+    SparseWeight: 1.15
+    DenseWeight: 0.82
+    MinCount: 0
+    MaxCount: 0
+    CanAppearNearBoundary: 1
+    CanAppearInCenter: 1
+    RequiresClearance: 0
+    ClearanceRadius: 0
+    AllowedHeightMask: -1
+  - Type: 3
+    DisplayName: Placeholder Index 3
+    Prefab: {fileID: 4699728453376706603, guid: 58fe5e86ddc5919469dc20a66a61f074,
+      type: 3}
+    AllowRandomYaw: 0
+    UsePlaceholder: 1
+    EnabledForAutoGeneration: 1
+    SemanticClass: 4
+    FootprintWidth: 1
+    FootprintDepth: 1
+    LogicalHeightCells: 1
+    Weight: 1
+    SparseWeight: 0.82
+    DenseWeight: 1.25
+    MinCount: 0
+    MaxCount: 0
+    CanAppearNearBoundary: 1
+    CanAppearInCenter: 1
+    RequiresClearance: 0
+    ClearanceRadius: 0
+    AllowedHeightMask: -1
+  - Type: 4
+    DisplayName: Index 4
+    Prefab: {fileID: 4699728453376706603, guid: 58fe5e86ddc5919469dc20a66a61f074,
+      type: 3}
+    AllowRandomYaw: 1
+    UsePlaceholder: 0
+    EnabledForAutoGeneration: 1
+    SemanticClass: 1
+    FootprintWidth: 1
+    FootprintDepth: 1
+    LogicalHeightCells: 1
+    Weight: 1
+    SparseWeight: 1.18
+    DenseWeight: 0.92
+    MinCount: 0
+    MaxCount: 0
+    CanAppearNearBoundary: 1
+    CanAppearInCenter: 1
+    RequiresClearance: 0
+    ClearanceRadius: 0
+    AllowedHeightMask: -1
+  - Type: 5
+    DisplayName: Index 5
+    Prefab: {fileID: 4699728453376706603, guid: 58fe5e86ddc5919469dc20a66a61f074,
+      type: 3}
+    AllowRandomYaw: 1
+    UsePlaceholder: 0
+    EnabledForAutoGeneration: 1
+    SemanticClass: 1
+    FootprintWidth: 1
+    FootprintDepth: 1
+    LogicalHeightCells: 1
+    Weight: 1
+    SparseWeight: 1.18
+    DenseWeight: 0.92
+    MinCount: 0
+    MaxCount: 0
+    CanAppearNearBoundary: 1
+    CanAppearInCenter: 1
+    RequiresClearance: 0
+    ClearanceRadius: 0
+    AllowedHeightMask: -1
+  - Type: 6
+    DisplayName: Index 6
+    Prefab: {fileID: 4699728453376706603, guid: 58fe5e86ddc5919469dc20a66a61f074,
+      type: 3}
+    AllowRandomYaw: 1
+    UsePlaceholder: 0
+    EnabledForAutoGeneration: 1
+    SemanticClass: 1
+    FootprintWidth: 1
+    FootprintDepth: 1
+    LogicalHeightCells: 1
+    Weight: 1
+    SparseWeight: 1.18
+    DenseWeight: 0.92
+    MinCount: 0
+    MaxCount: 0
+    CanAppearNearBoundary: 1
+    CanAppearInCenter: 1
+    RequiresClearance: 0
+    ClearanceRadius: 0
+    AllowedHeightMask: -1
