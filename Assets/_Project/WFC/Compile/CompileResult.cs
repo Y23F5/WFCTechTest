@@ -22,6 +22,11 @@ namespace WFCTechTest.WFC.Compile
         }
 
         /// <summary>
+        /// Gets or sets the deterministic seed used to build this compiled result.
+        /// </summary>
+        public int Seed { get; set; }
+
+        /// <summary>
         /// Gets the compiled voxel map.
         /// </summary>
         public VoxelOccupancyMap Volume { get; }
@@ -35,6 +40,11 @@ namespace WFCTechTest.WFC.Compile
         /// Gets the compiled interest anchor positions.
         /// </summary>
         public List<GridCoord3D> InterestAnchors { get; } = new List<GridCoord3D>();
+
+        /// <summary>
+        /// Gets the generated object-level obstacle placements.
+        /// </summary>
+        public List<ObstaclePlacement> ObstaclePlacements { get; } = new List<ObstaclePlacement>();
 
         /// <summary>
         /// Gets or sets the number of multi-cell archetypes that degraded during placement.
