@@ -57,6 +57,36 @@ namespace WFCTechTest.WFC.Diagnostics
         public float GroundCoverageRatio { get; set; }
 
         /// <summary>
+        /// Gets or sets the target openness ratio for the current run.
+        /// </summary>
+        public float OpenCoverageTarget { get; set; }
+
+        /// <summary>
+        /// Gets or sets the allowed openness tolerance for the current run.
+        /// </summary>
+        public float OpenCoverageTolerance { get; set; }
+
+        /// <summary>
+        /// Gets or sets the measured openness ratio for the current run.
+        /// </summary>
+        public float OpenCoverageActual { get; set; }
+
+        /// <summary>
+        /// Gets or sets the measured openness delta from the target.
+        /// </summary>
+        public float OpenCoverageDelta { get; set; }
+
+        /// <summary>
+        /// Gets or sets the target obstacle fill derived from the openness target.
+        /// </summary>
+        public float TargetObstacleFill { get; set; }
+
+        /// <summary>
+        /// Gets or sets the actual obstacle fill derived from the openness measurement.
+        /// </summary>
+        public float ActualObstacleFill { get; set; }
+
+        /// <summary>
         /// Gets or sets the human-readable coverage metric name used for the current report.
         /// </summary>
         public string CoverageMetricName { get; set; } = string.Empty;
@@ -142,6 +172,36 @@ namespace WFCTechTest.WFC.Diagnostics
         public List<GridCoord3D> InterestAnchorPositions { get; } = new List<GridCoord3D>();
 
         /// <summary>
+        /// Gets obstacle placement counts by semantic class.
+        /// </summary>
+        public Dictionary<ObstacleSemanticClass, int> ObstacleClassCounts { get; } = new Dictionary<ObstacleSemanticClass, int>();
+
+        /// <summary>
+        /// Gets dense-placement ratios by semantic class.
+        /// </summary>
+        public Dictionary<ObstacleSemanticClass, float> ObstacleDenseRatios { get; } = new Dictionary<ObstacleSemanticClass, float>();
+
+        /// <summary>
+        /// Gets or sets the number of explicit interest anchors in the final compile result.
+        /// </summary>
+        public int InterestAnchorCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of interest anchors requested by configuration.
+        /// </summary>
+        public int RequestedInterestAnchorCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of interest anchors that survived solver degradation.
+        /// </summary>
+        public int PlacedInterestAnchorCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets how many soft-constraint degradations were applied.
+        /// </summary>
+        public int SoftConstraintDegradedCount { get; set; }
+
+        /// <summary>
         /// Clears per-attempt counters before a new retry begins.
         /// </summary>
         public void ResetAttempt(int attempt)
@@ -154,6 +214,12 @@ namespace WFCTechTest.WFC.Diagnostics
             PropagationCount = 0;
             DegradedFootprintCount = 0;
             GroundCoverageRatio = 0f;
+            OpenCoverageTarget = 0f;
+            OpenCoverageTolerance = 0f;
+            OpenCoverageActual = 0f;
+            OpenCoverageDelta = 0f;
+            TargetObstacleFill = 0f;
+            ActualObstacleFill = 0f;
             CoverageMetricName = string.Empty;
             InteriorGroundStandableCells = 0;
             InteriorGroundCandidateCells = 0;
@@ -164,7 +230,13 @@ namespace WFCTechTest.WFC.Diagnostics
             LargestOpenAreaRatio = 0f;
             TotalStandableCells = 0;
             GroundStandableCells = 0;
+            InterestAnchorCount = 0;
+            RequestedInterestAnchorCount = 0;
+            PlacedInterestAnchorCount = 0;
+            SoftConstraintDegradedCount = 0;
             SemanticCounts.Clear();
+            ObstacleClassCounts.Clear();
+            ObstacleDenseRatios.Clear();
             InterestAnchorPositions.Clear();
         }
 

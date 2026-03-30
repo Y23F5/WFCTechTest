@@ -1,6 +1,8 @@
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Serialization;
+using WFCTechTest.WFC.Core;
 using WFCTechTest.WFC.Data;
 using WFCTechTest.WFC.Diagnostics;
 using WFCTechTest.WFC.Runtime;
@@ -36,6 +38,8 @@ namespace WFCTechTest.WFC.Unity.Runtime
 
         [SerializeField] private GenerationConfigAsset generationConfig;
         [SerializeField] private SemanticTileSetAsset semanticTileSet;
+        [FormerlySerializedAs("obstaclePalette")]
+        [SerializeField] private PrefabRegistryAsset prefabRegistry;
         [SerializeField] private int startSeed = 1000;
         [SerializeField] private BatchSize batchSize = BatchSize.Standard;
 
@@ -57,9 +61,15 @@ namespace WFCTechTest.WFC.Unity.Runtime
                 semanticTileSet.ResetToDefaults();
             }
 
+            if (prefabRegistry == null)
+            {
+                prefabRegistry = ScriptableObject.CreateInstance<PrefabRegistryAsset>();
+                prefabRegistry.EnsureDefaultPlaceholders(null);
+            }
+
             var count = GetSeedCount();
             var batchReport = new BatchGenerationReport();
-            var pipeline = new WfcGenerationPipeline(generationConfig, semanticTileSet);
+            var pipeline = new WfcGenerationPipeline(generationConfig, semanticTileSet, prefabRegistry);
 
             for (var i = 0; i < count; i++)
             {
@@ -68,10 +78,12 @@ namespace WFCTechTest.WFC.Unity.Runtime
             }
 
             var builder = new StringBuilder();
-            builder.AppendLine($"WFC batch {batchSize} seeds={count} metric={generationConfig.CoverageMetric} success={batchReport.SuccessRatio:P1} avgAttempts={batchReport.AverageAttempts:F2}");
+            builder.AppendLine($"WFC batch {batchSize} seeds={count} metric={generationConfig.CoverageMetric} success={batchReport.SuccessRatio:P1} avgAttempts={batchReport.AverageAttempts:F2} targetOpen={generationConfig.TargetOpenCoverage:P1}±{generationConfig.OpenCoverageTolerance:P1}");
             if (batchReport.Runs.Count > 0)
             {
-                builder.AppendLine($"avg obstacleFill={batchReport.Runs.Average(report => report.ObstacleFillRatio):P1} avg singleCell={batchReport.Runs.Average(report => report.SingleCellObstacleRatio):P1} avg tall={batchReport.Runs.Average(report => report.TallObstacleRatio):P1} avg openRegion={batchReport.Runs.Average(report => report.LargestOpenAreaRatio):P1}");
+                builder.AppendLine($"avg lowCover={AverageClassCount(batchReport, ObstacleSemanticClass.LowCover):F1} dense={AverageDenseRatio(batchReport, ObstacleSemanticClass.LowCover):P1} avg highCover={AverageClassCount(batchReport, ObstacleSemanticClass.HighCover):F1} dense={AverageDenseRatio(batchReport, ObstacleSemanticClass.HighCover):P1}");
+                builder.AppendLine($"avg tower={AverageClassCount(batchReport, ObstacleSemanticClass.Tower):F1} dense={AverageDenseRatio(batchReport, ObstacleSemanticClass.Tower):P1} avg blocker={AverageClassCount(batchReport, ObstacleSemanticClass.Blocker):F1} dense={AverageDenseRatio(batchReport, ObstacleSemanticClass.Blocker):P1}");
+                builder.AppendLine($"avg interestAnchors={batchReport.Runs.Average(report => report.PlacedInterestAnchorCount):F1}/{generationConfig.InterestAnchorCount:F1} avg openCoverage={batchReport.Runs.Average(report => report.OpenCoverageActual):P1} avg obstacleFill={batchReport.Runs.Average(report => report.ActualObstacleFill):P1} avg delta={batchReport.Runs.Average(report => report.OpenCoverageDelta):+0.0%;-0.0%;0.0%} avg openRegion={batchReport.Runs.Average(report => report.LargestOpenAreaRatio):P1}");
             }
             foreach (var pair in batchReport.BuildFailureHistogram())
             {
@@ -97,6 +109,26 @@ namespace WFCTechTest.WFC.Unity.Runtime
                 BatchSize.Standard => generationConfig.StandardBatchSeeds,
                 _ => generationConfig.StressBatchSeeds
             };
+        }
+
+        private static float AverageClassCount(BatchGenerationReport batchReport, ObstacleSemanticClass semanticClass)
+        {
+            if (batchReport.Runs.Count == 0)
+            {
+                return 0f;
+            }
+
+            return (float)batchReport.Runs.Average(report => report.ObstacleClassCounts.TryGetValue(semanticClass, out var count) ? count : 0);
+        }
+
+        private static float AverageDenseRatio(BatchGenerationReport batchReport, ObstacleSemanticClass semanticClass)
+        {
+            if (batchReport.Runs.Count == 0)
+            {
+                return 0f;
+            }
+
+            return (float)batchReport.Runs.Average(report => report.ObstacleDenseRatios.TryGetValue(semanticClass, out var ratio) ? ratio : 0f);
         }
     }
 }

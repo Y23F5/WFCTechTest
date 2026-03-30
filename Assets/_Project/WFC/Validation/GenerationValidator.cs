@@ -15,21 +15,6 @@ namespace WFCTechTest.WFC.Validation
     {
         private readonly GenerationConfigAsset _config;
         private readonly ConnectivityValidator _connectivityValidator = new ConnectivityValidator();
-        private static readonly HashSet<SemanticArchetype> OpenArchetypes = new HashSet<SemanticArchetype>
-        {
-            SemanticArchetype.Open,
-            SemanticArchetype.InterestAnchor
-        };
-
-        private static readonly HashSet<SemanticArchetype> ObstacleArchetypes = new HashSet<SemanticArchetype>
-        {
-            SemanticArchetype.LowCover1x1,
-            SemanticArchetype.LowCover1x2,
-            SemanticArchetype.HighCover1x1,
-            SemanticArchetype.HighCover1x2,
-            SemanticArchetype.Tower1x1,
-            SemanticArchetype.Block2x2
-        };
 
         /// <summary>
         /// Initializes a validator instance.
@@ -55,7 +40,7 @@ namespace WFCTechTest.WFC.Validation
             if (compileResult.DegradedFootprints > GetAllowedDegradedFootprintCount(compileResult))
             {
                 report.FailureReason = GenerationFailureReason.FootprintConflict;
-                report.Message = "Too many multi-cell footprints degraded during compilation.";
+                report.Message = "Too many obstacle placements had no legal Prefab Registry entry and fell back during compilation.";
                 return false;
             }
 
@@ -65,12 +50,18 @@ namespace WFCTechTest.WFC.Validation
             report.TotalStandableCells = MovementRules.CountAllStandableCells(compileResult.Volume);
             report.CoverageMetricName = _config.CoverageMetric.ToString();
             report.GroundCoverageRatio = ComputeCoverageRatio(compileResult, report);
+            report.OpenCoverageTarget = _config.TargetOpenCoverage;
+            report.OpenCoverageTolerance = _config.OpenCoverageTolerance;
+            report.OpenCoverageActual = report.GroundCoverageRatio;
+            report.OpenCoverageDelta = report.OpenCoverageActual - report.OpenCoverageTarget;
+            report.TargetObstacleFill = _config.TargetObstacleFill;
+            report.ActualObstacleFill = 1f - report.OpenCoverageActual;
             PopulateSemanticDensityMetrics(compileResult, report);
 
             if (report.GroundCoverageRatio < _config.MinGroundCoverage || report.GroundCoverageRatio > _config.MaxGroundCoverage)
             {
                 report.FailureReason = GenerationFailureReason.CoverageOutOfRange;
-                report.Message = $"Coverage metric {_config.CoverageMetric} produced {report.GroundCoverageRatio:P1}, which fell outside the approved range.";
+                report.Message = $"Open coverage target {_config.TargetOpenCoverage:P1} ± {_config.OpenCoverageTolerance:P1} produced {report.OpenCoverageActual:P1} ({report.OpenCoverageDelta:+0.0%;-0.0%;0.0%}).";
                 return false;
             }
 
@@ -83,6 +74,8 @@ namespace WFCTechTest.WFC.Validation
             }
 
             report.InterestAnchorPositions.AddRange(compileResult.InterestAnchors);
+            report.PlacedInterestAnchorCount = compileResult.InterestAnchors.Count;
+            report.InterestAnchorCount = compileResult.InterestAnchors.Count;
             foreach (var anchor in compileResult.InterestAnchors)
             {
                 if (!MovementRules.IsStandable(compileResult.Volume, anchor.X, anchor.Y, anchor.Z))
@@ -172,7 +165,7 @@ namespace WFCTechTest.WFC.Validation
                 for (var z = 1; z < compileResult.SemanticGrid.Depth - 1; z++)
                 {
                     var archetype = compileResult.SemanticGrid.Get(x, z);
-                    if (archetype == SemanticArchetype.Open || archetype == SemanticArchetype.InterestAnchor)
+                    if (archetype.IsOpenLike())
                     {
                         count++;
                     }
@@ -184,59 +177,89 @@ namespace WFCTechTest.WFC.Validation
 
         private static void PopulateSemanticDensityMetrics(CompileResult compileResult, GenerationReport report)
         {
-            var openCells = 0;
             var obstacleCells = 0;
-            var singleCellObstacles = 0;
+            var singleCellObstacleCells = 0;
             var tallObstacleCells = 0;
+            var occupied = new HashSet<GridCoord2D>();
+            var classCounts = new Dictionary<ObstacleSemanticClass, int>();
+            var denseCounts = new Dictionary<ObstacleSemanticClass, int>();
+
+            foreach (var placement in compileResult.ObstaclePlacements)
+            {
+                var placementCells = placement.OccupiedCells.Count;
+                obstacleCells += placementCells;
+                foreach (var cell in placement.OccupiedCells)
+                {
+                    occupied.Add(cell);
+                }
+
+                if (placement.FootprintWidth * placement.FootprintDepth == 1)
+                {
+                    singleCellObstacleCells += placementCells;
+                }
+
+                if (placement.Height >= 2)
+                {
+                    tallObstacleCells += placementCells;
+                }
+
+                if (placement.SemanticClass != ObstacleSemanticClass.None)
+                {
+                    classCounts[placement.SemanticClass] = classCounts.TryGetValue(placement.SemanticClass, out var classCount) ? classCount + 1 : 1;
+                    if (placement.DensityBand == SemanticDensityBand.Dense)
+                    {
+                        denseCounts[placement.SemanticClass] = denseCounts.TryGetValue(placement.SemanticClass, out var denseCount) ? denseCount + 1 : 1;
+                    }
+                }
+            }
+
+            var openCells = 0;
             var visited = new HashSet<GridCoord2D>();
             var largestOpenRegion = 0;
-
             for (var x = 1; x < compileResult.SemanticGrid.Width - 1; x++)
             {
                 for (var z = 1; z < compileResult.SemanticGrid.Depth - 1; z++)
                 {
                     var coord = new GridCoord2D(x, z);
-                    var archetype = compileResult.SemanticGrid.Get(x, z);
-                    if (OpenArchetypes.Contains(archetype))
+                    if (occupied.Contains(coord))
                     {
-                        openCells++;
-                        if (visited.Add(coord))
+                        continue;
+                    }
+
+                    openCells++;
+                    if (visited.Add(coord))
+                    {
+                        var region = FloodOpenRegion(compileResult.SemanticGrid, occupied, coord, visited);
+                        if (region > largestOpenRegion)
                         {
-                            var region = FloodOpenRegion(compileResult.SemanticGrid, coord, visited);
-                            if (region > largestOpenRegion)
-                            {
-                                largestOpenRegion = region;
-                            }
+                            largestOpenRegion = region;
                         }
-
-                        continue;
-                    }
-
-                    if (!ObstacleArchetypes.Contains(archetype))
-                    {
-                        continue;
-                    }
-
-                    obstacleCells++;
-                    if (archetype is SemanticArchetype.LowCover1x1 or SemanticArchetype.HighCover1x1 or SemanticArchetype.Tower1x1)
-                    {
-                        singleCellObstacles++;
-                    }
-
-                    if (archetype is SemanticArchetype.HighCover1x1 or SemanticArchetype.HighCover1x2 or SemanticArchetype.Tower1x1 or SemanticArchetype.Block2x2)
-                    {
-                        tallObstacleCells++;
                     }
                 }
             }
 
             report.ObstacleFillRatio = report.InteriorGroundCandidateCells > 0 ? obstacleCells / (float)report.InteriorGroundCandidateCells : 0f;
-            report.SingleCellObstacleRatio = obstacleCells > 0 ? singleCellObstacles / (float)obstacleCells : 0f;
+            report.SingleCellObstacleRatio = obstacleCells > 0 ? singleCellObstacleCells / (float)obstacleCells : 0f;
             report.TallObstacleRatio = obstacleCells > 0 ? tallObstacleCells / (float)obstacleCells : 0f;
             report.LargestOpenAreaRatio = openCells > 0 ? largestOpenRegion / (float)openCells : 0f;
+            report.InterestAnchorCount = compileResult.InterestAnchors.Count;
+
+            foreach (var semanticClass in new[]
+                     {
+                         ObstacleSemanticClass.LowCover,
+                         ObstacleSemanticClass.HighCover,
+                         ObstacleSemanticClass.Tower,
+                         ObstacleSemanticClass.Blocker
+                     })
+            {
+                var count = classCounts.TryGetValue(semanticClass, out var classCount) ? classCount : 0;
+                var dense = denseCounts.TryGetValue(semanticClass, out var denseCount) ? denseCount : 0;
+                report.ObstacleClassCounts[semanticClass] = count;
+                report.ObstacleDenseRatios[semanticClass] = count > 0 ? dense / (float)count : 0f;
+            }
         }
 
-        private static int FloodOpenRegion(SemanticGrid2D grid, GridCoord2D start, HashSet<GridCoord2D> visited)
+        private static int FloodOpenRegion(SemanticGrid2D grid, HashSet<GridCoord2D> occupied, GridCoord2D start, HashSet<GridCoord2D> visited)
         {
             var count = 0;
             var queue = new Queue<GridCoord2D>();
@@ -247,7 +270,7 @@ namespace WFCTechTest.WFC.Validation
                 var current = queue.Dequeue();
                 count++;
 
-                foreach (var next in EnumerateOpenNeighbors(grid, current))
+                foreach (var next in EnumerateOpenNeighbors(grid, occupied, current))
                 {
                     if (visited.Add(next))
                     {
@@ -259,7 +282,7 @@ namespace WFCTechTest.WFC.Validation
             return count;
         }
 
-        private static IEnumerable<GridCoord2D> EnumerateOpenNeighbors(SemanticGrid2D grid, GridCoord2D coord)
+        private static IEnumerable<GridCoord2D> EnumerateOpenNeighbors(SemanticGrid2D grid, HashSet<GridCoord2D> occupied, GridCoord2D coord)
         {
             var offsets = new[]
             {
@@ -277,7 +300,7 @@ namespace WFCTechTest.WFC.Validation
                     continue;
                 }
 
-                if (OpenArchetypes.Contains(grid.Get(next.X, next.Z)))
+                if (!occupied.Contains(next))
                 {
                     yield return next;
                 }
