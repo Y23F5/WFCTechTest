@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Serialization;
+using WFCTechTest.WFC.Core;
 
 namespace WFCTechTest.WFC.Data
 {
@@ -26,6 +28,11 @@ namespace WFCTechTest.WFC.Data
     public sealed class GenerationConfigAsset : ScriptableObject
     {
         /// <summary>
+        /// Gets the world-space map center.
+        /// </summary>
+        public Vector3 MapCenter => mapCenter;
+
+        /// <summary>
         /// Gets the semantic grid width.
         /// </summary>
         public int Width => width;
@@ -41,9 +48,14 @@ namespace WFCTechTest.WFC.Data
         public int Height => height;
 
         /// <summary>
-        /// Gets the maximum number of restart attempts per seed.
+        /// Gets the configured maximum number of restart attempts per seed.
         /// </summary>
         public int MaxRetries => maxRetries;
+
+        /// <summary>
+        /// Gets the effective retry budget after applying openness-extreme scaling.
+        /// </summary>
+        public int EffectiveMaxRetries => Mathf.Max(maxRetries, Mathf.RoundToInt(maxRetries * GetRetryBudgetMultiplier()));
 
         /// <summary>
         /// Gets the enforced boundary wall height.
@@ -56,14 +68,29 @@ namespace WFCTechTest.WFC.Data
         public CoverageMetricMode CoverageMetric => coverageMetric;
 
         /// <summary>
-        /// Gets the target minimum walkable ground ratio.
+        /// Gets the desired interior openness ratio.
         /// </summary>
-        public float MinGroundCoverage => minGroundCoverage;
+        public float TargetOpenCoverage => targetOpenCoverage;
 
         /// <summary>
-        /// Gets the target maximum walkable ground ratio.
+        /// Gets the acceptable openness tolerance around the target.
         /// </summary>
-        public float MaxGroundCoverage => maxGroundCoverage;
+        public float OpenCoverageTolerance => openCoverageTolerance;
+
+        /// <summary>
+        /// Gets the target minimum walkable ground ratio derived from the openness target.
+        /// </summary>
+        public float MinGroundCoverage => Mathf.Clamp01(targetOpenCoverage - openCoverageTolerance);
+
+        /// <summary>
+        /// Gets the target maximum walkable ground ratio derived from the openness target.
+        /// </summary>
+        public float MaxGroundCoverage => Mathf.Clamp01(targetOpenCoverage + openCoverageTolerance);
+
+        /// <summary>
+        /// Gets the derived target obstacle fill ratio.
+        /// </summary>
+        public float TargetObstacleFill => 1f - targetOpenCoverage;
 
         /// <summary>
         /// Gets the required minimum largest-component ratio.
@@ -100,7 +127,28 @@ namespace WFCTechTest.WFC.Data
         /// </summary>
         public int StressBatchSeeds => stressBatchSeeds;
 
+        /// <summary>
+        /// Gets the target dense ratio for low-cover semantics.
+        /// </summary>
+        public float LowCoverDenseRatio => lowCoverDenseRatio;
+
+        /// <summary>
+        /// Gets the target dense ratio for high-cover semantics.
+        /// </summary>
+        public float HighCoverDenseRatio => highCoverDenseRatio;
+
+        /// <summary>
+        /// Gets the target dense ratio for tower semantics.
+        /// </summary>
+        public float TowerDenseRatio => towerDenseRatio;
+
+        /// <summary>
+        /// Gets the target dense ratio for blocker semantics.
+        /// </summary>
+        public float BlockerDenseRatio => blockerDenseRatio;
+
         [Header("Dimensions")]
+        [SerializeField] private Vector3 mapCenter = Vector3.zero;
         [SerializeField] private int width = 48;
         [SerializeField] private int height = 8;
         [SerializeField] private int depth = 48;
@@ -116,9 +164,21 @@ namespace WFCTechTest.WFC.Data
 
         [Header("Validation")]
         [SerializeField] private CoverageMetricMode coverageMetric = CoverageMetricMode.InteriorStandable;
-        [SerializeField] private float minGroundCoverage = 0.55f;
-        [SerializeField] private float maxGroundCoverage = 0.65f;
+        [SerializeField] private float targetOpenCoverage = 0.60f;
+        [SerializeField] private float openCoverageTolerance = 0.02f;
         [SerializeField] private float minLargestComponentRatio = 0.85f;
+
+        [FormerlySerializedAs("minGroundCoverage")]
+        [SerializeField, HideInInspector] private float legacyMinGroundCoverage = 0.55f;
+        [FormerlySerializedAs("maxGroundCoverage")]
+        [SerializeField, HideInInspector] private float legacyMaxGroundCoverage = 0.65f;
+        [SerializeField, HideInInspector] private bool coverageTargetInitialized;
+
+        [Header("Heavy Semantic Density")]
+        [SerializeField] private float lowCoverDenseRatio = 0.42f;
+        [SerializeField] private float highCoverDenseRatio = 0.48f;
+        [SerializeField] private float towerDenseRatio = 0.35f;
+        [SerializeField] private float blockerDenseRatio = 0.55f;
 
         [Header("Batch Testing")]
         [SerializeField] private int quickBatchSeeds = 20;
@@ -135,12 +195,87 @@ namespace WFCTechTest.WFC.Data
             interestAnchorCount = Mathf.Clamp(interestAnchorCount, 0, 16);
             maxJumpHeight = Mathf.Max(0.1f, maxJumpHeight);
             maxJumpDistance = Mathf.Max(1f, maxJumpDistance);
-            minGroundCoverage = Mathf.Clamp01(minGroundCoverage);
-            maxGroundCoverage = Mathf.Clamp(maxGroundCoverage, minGroundCoverage, 1f);
+            if (!coverageTargetInitialized)
+            {
+                var migratedMin = Mathf.Clamp01(legacyMinGroundCoverage);
+                var migratedMax = Mathf.Clamp(legacyMaxGroundCoverage, migratedMin, 1f);
+                targetOpenCoverage = (migratedMin + migratedMax) * 0.5f;
+                openCoverageTolerance = Mathf.Max(0.01f, (migratedMax - migratedMin) * 0.5f);
+                coverageTargetInitialized = true;
+            }
+
+            targetOpenCoverage = Mathf.Clamp(targetOpenCoverage, 0.10f, 0.95f);
+            openCoverageTolerance = Mathf.Clamp(openCoverageTolerance, 0.01f, 0.20f);
             minLargestComponentRatio = Mathf.Clamp01(minLargestComponentRatio);
+            lowCoverDenseRatio = Mathf.Clamp01(lowCoverDenseRatio);
+            highCoverDenseRatio = Mathf.Clamp01(highCoverDenseRatio);
+            towerDenseRatio = Mathf.Clamp01(towerDenseRatio);
+            blockerDenseRatio = Mathf.Clamp01(blockerDenseRatio);
             quickBatchSeeds = Mathf.Max(1, quickBatchSeeds);
             standardBatchSeeds = Mathf.Max(quickBatchSeeds, standardBatchSeeds);
             stressBatchSeeds = Mathf.Max(standardBatchSeeds, stressBatchSeeds);
+            legacyMinGroundCoverage = MinGroundCoverage;
+            legacyMaxGroundCoverage = MaxGroundCoverage;
+        }
+
+        /// <summary>
+        /// Returns the configured dense target ratio for the supplied obstacle semantic class.
+        /// </summary>
+        public float GetDenseRatio(ObstacleSemanticClass semanticClass)
+        {
+            return semanticClass switch
+            {
+                ObstacleSemanticClass.LowCover => lowCoverDenseRatio,
+                ObstacleSemanticClass.HighCover => highCoverDenseRatio,
+                ObstacleSemanticClass.Tower => towerDenseRatio,
+                ObstacleSemanticClass.Blocker => blockerDenseRatio,
+                _ => 0f
+            };
+        }
+
+        /**
+         * @brief Applies a new openness target and tolerance, then revalidates the asset state.
+         * @param targetOpen The desired open coverage ratio.
+         * @param tolerance The allowed deviation around the target.
+         */
+        public void SetOpenCoverageTarget(float targetOpen, float tolerance)
+        {
+            targetOpenCoverage = targetOpen;
+            openCoverageTolerance = tolerance;
+            coverageTargetInitialized = true;
+            OnValidate();
+        }
+
+        /**
+         * @brief Applies all dense ratio controls at once and revalidates the asset state.
+         */
+        public void SetDenseRatios(float lowCover, float highCover, float tower, float blocker)
+        {
+            lowCoverDenseRatio = lowCover;
+            highCoverDenseRatio = highCover;
+            towerDenseRatio = tower;
+            blockerDenseRatio = blocker;
+            OnValidate();
+        }
+
+        private float GetRetryBudgetMultiplier()
+        {
+            if (targetOpenCoverage <= 0.15f || targetOpenCoverage >= 0.95f)
+            {
+                return 4f;
+            }
+
+            if (targetOpenCoverage <= 0.20f || targetOpenCoverage >= 0.90f)
+            {
+                return 3f;
+            }
+
+            if (targetOpenCoverage <= 0.25f || targetOpenCoverage >= 0.85f)
+            {
+                return 2f;
+            }
+
+            return 1f;
         }
     }
 }
