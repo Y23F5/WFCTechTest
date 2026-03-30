@@ -2,7 +2,8 @@
   "name": "WFC.Tests.Editor",
   "rootNamespace": "WFCTechTest.WFC.Tests.Editor",
   "references": [
-    "WFC.Runtime"
+    "WFC.Runtime",
+    "WFC.Editor"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"
