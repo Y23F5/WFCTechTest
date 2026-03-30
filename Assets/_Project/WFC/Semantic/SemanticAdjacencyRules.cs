@@ -10,6 +10,18 @@ namespace WFCTechTest.WFC.Semantic
     /// </summary>
     public sealed class SemanticAdjacencyRules
     {
+        private enum SemanticRuleFamily
+        {
+            Open,
+            InterestAnchor,
+            BoundaryWall,
+            BoundaryCorner,
+            LowCover,
+            HighCover,
+            Tower,
+            Blocker
+        }
+
         private readonly HashSet<(SemanticArchetype, SemanticArchetype)> _compatibility;
 
         /// <summary>
@@ -48,29 +60,39 @@ namespace WFCTechTest.WFC.Semantic
 
         private static bool AllowPair(SemanticArchetype a, SemanticArchetype b)
         {
-            if (IsBoundary(a) != IsBoundary(b))
+            var left = ResolveFamily(a);
+            var right = ResolveFamily(b);
+
+            if (left == SemanticRuleFamily.Open || right == SemanticRuleFamily.Open)
             {
                 return true;
             }
 
-            if (a == SemanticArchetype.BoundaryCorner && b == SemanticArchetype.BoundaryCorner)
+            if (left == SemanticRuleFamily.BoundaryCorner && right == SemanticRuleFamily.BoundaryCorner)
             {
                 return false;
             }
 
-            if (a == SemanticArchetype.Tower1x1 && b == SemanticArchetype.Tower1x1)
+            if (Contains(left, right, SemanticRuleFamily.InterestAnchor)
+                && ContainsAny(left, right, SemanticRuleFamily.BoundaryWall, SemanticRuleFamily.BoundaryCorner, SemanticRuleFamily.Tower, SemanticRuleFamily.Blocker))
             {
                 return false;
             }
 
-            if ((a == SemanticArchetype.Tower1x1 && b == SemanticArchetype.Block2x2)
-                || (a == SemanticArchetype.Block2x2 && b == SemanticArchetype.Tower1x1))
+            if (Contains(left, right, SemanticRuleFamily.Tower)
+                && ContainsAny(left, right, SemanticRuleFamily.BoundaryWall, SemanticRuleFamily.BoundaryCorner, SemanticRuleFamily.Blocker))
             {
                 return false;
             }
 
-            if ((a == SemanticArchetype.InterestAnchor && b == SemanticArchetype.Block2x2)
-                || (a == SemanticArchetype.Block2x2 && b == SemanticArchetype.InterestAnchor))
+            if (Contains(left, right, SemanticRuleFamily.HighCover)
+                && Contains(left, right, SemanticRuleFamily.BoundaryCorner))
+            {
+                return false;
+            }
+
+            if (Contains(left, right, SemanticRuleFamily.BoundaryWall)
+                && ContainsAny(left, right, SemanticRuleFamily.HighCover, SemanticRuleFamily.Tower, SemanticRuleFamily.InterestAnchor))
             {
                 return false;
             }
@@ -78,9 +100,41 @@ namespace WFCTechTest.WFC.Semantic
             return true;
         }
 
-        private static bool IsBoundary(SemanticArchetype archetype)
+        private static SemanticRuleFamily ResolveFamily(SemanticArchetype archetype)
         {
-            return archetype == SemanticArchetype.BoundaryWall || archetype == SemanticArchetype.BoundaryCorner;
+            return archetype switch
+            {
+                SemanticArchetype.Open => SemanticRuleFamily.Open,
+                SemanticArchetype.InterestAnchor => SemanticRuleFamily.InterestAnchor,
+                SemanticArchetype.BoundaryWall => SemanticRuleFamily.BoundaryWall,
+                SemanticArchetype.BoundaryCorner => SemanticRuleFamily.BoundaryCorner,
+                _ => archetype.GetObstacleSemanticClass() switch
+                {
+                    ObstacleSemanticClass.LowCover => SemanticRuleFamily.LowCover,
+                    ObstacleSemanticClass.HighCover => SemanticRuleFamily.HighCover,
+                    ObstacleSemanticClass.Tower => SemanticRuleFamily.Tower,
+                    ObstacleSemanticClass.Blocker => SemanticRuleFamily.Blocker,
+                    _ => SemanticRuleFamily.Open
+                }
+            };
+        }
+
+        private static bool Contains(SemanticRuleFamily left, SemanticRuleFamily right, SemanticRuleFamily family)
+        {
+            return left == family || right == family;
+        }
+
+        private static bool ContainsAny(SemanticRuleFamily left, SemanticRuleFamily right, params SemanticRuleFamily[] families)
+        {
+            foreach (var family in families)
+            {
+                if (Contains(left, right, family))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
