@@ -2,6 +2,8 @@
 
 基于波函数坍缩（WFC）算法的 Unity 地图生成、编辑与导出工具。
 
+> **Map Editor 中文参数说明**：见 [Docs/MapEditor参数说明.md](Docs/MapEditor参数说明.md)
+
 ## 核心机制
 
 本工具将地图的逻辑生成与美术表现分离，通过两个阶段完成地图构建：
