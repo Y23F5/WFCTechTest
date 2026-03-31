@@ -103,9 +103,10 @@ namespace WFCTechTest.WFC.Editor {
             if (instance.transform.parent != obstacleRoot) Undo.SetTransformParent(instance.transform, obstacleRoot, "Import Obstacles");
 
             var position = new Vector3((float)info.Pos_X, (float)info.Pos_Y, (float)info.Pos_Z);
-            instance.transform.position = new Vector3(position.x, GetGroundTopY(), position.z);
+            var groundedY = TryGetRegistryAlignedY(entry, out var resolvedY) ? resolvedY : GetGroundTopY();
+            instance.transform.position = new Vector3(position.x, groundedY, position.z);
             instance.transform.rotation = Quaternion.Euler(0f, (float)info.Rot_Y, 0f);
-            AlignTransformBottomToGround(instance.transform);
+            if (!TryGetRegistryAlignedY(entry, out _)) AlignTransformBottomToGround(instance.transform);
 
             instance.name = $"Imported_{info.Type}_{Round3(position.x)}_{Round3(position.z)}";
             var metadata = instance.GetComponent<ObstacleInstanceMetadata>();
@@ -129,6 +130,26 @@ namespace WFCTechTest.WFC.Editor {
             var mapCenterY = config != null ? config.MapCenter.y : 0f;
             var edge = _prefabRegistry != null ? _prefabRegistry.GetPlacementCellEdge() : 1f;
             return mapCenterY + (edge * 0.5f);
+        }
+
+        private bool TryGetRegistryAlignedY(PrefabRegistryEntry entry, out float alignedY) {
+            alignedY = GetGroundTopY();
+            if (entry == null || !PrefabRegistryAsset.TryGetCombinedPrefabLocalBounds(entry.Prefab, out _)) return false;
+
+            alignedY += entry.DefaultPosY;
+            return true;
+        }
+
+        private void AlignTransformUsingRegistry(Transform transform, PrefabRegistryEntry entry) {
+            if (transform == null) return;
+
+            if (TryGetRegistryAlignedY(entry, out var alignedY)) {
+                var position = transform.position;
+                transform.position = new Vector3(position.x, alignedY, position.z);
+                return;
+            }
+
+            AlignTransformBottomToGround(transform);
         }
 
         private void AlignTransformBottomToGround(Transform transform) {

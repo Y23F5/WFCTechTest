@@ -428,6 +428,8 @@ namespace WFCTechTest.WFC.Editor
                 var autoProperty = entry.FindPropertyRelative("EnabledForAutoGeneration");
                 var logicalHeightProperty = entry.FindPropertyRelative("LogicalHeightCells");
                 var logicalHeightLockedProperty = entry.FindPropertyRelative("LogicalHeightLocked");
+                var defaultPosYProperty = entry.FindPropertyRelative("DefaultPosY");
+                var defaultPosYLockedProperty = entry.FindPropertyRelative("DefaultPosYLocked");
                 var boundaryProperty = entry.FindPropertyRelative("CanAppearNearBoundary");
                 var centerProperty = entry.FindPropertyRelative("CanAppearInCenter");
                 var clearanceProperty = entry.FindPropertyRelative("RequiresClearance");
@@ -477,6 +479,14 @@ namespace WFCTechTest.WFC.Editor
                     logicalHeightLockedProperty.boolValue = true;
                 }
 
+                EditorGUI.BeginChangeCheck();
+                var defaultPosY = EditorGUILayout.FloatField(new GUIContent("Default Pos Y"), defaultPosYProperty.floatValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    defaultPosYProperty.floatValue = defaultPosY;
+                    defaultPosYLockedProperty.boolValue = true;
+                }
+
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     EditorGUILayout.LabelField(logicalHeightLockedProperty.boolValue ? "Height: Manual" : "Height: Auto", EditorStyles.miniLabel);
@@ -484,6 +494,20 @@ namespace WFCTechTest.WFC.Editor
                     {
                         _prefabRegistryObject.ApplyModifiedProperties();
                         _prefabRegistry.RecalculateLogicalHeightAt(i);
+                        EditorUtility.SetDirty(_prefabRegistry);
+                        _prefabRegistryObject = new SerializedObject(_prefabRegistry);
+                        _prefabRegistryObject.Update();
+                        break;
+                    }
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(defaultPosYLockedProperty.boolValue ? "Default Pos Y: Manual" : "Default Pos Y: Auto", EditorStyles.miniLabel);
+                    if (GUILayout.Button("Recalc Y", GUILayout.Width(100f)))
+                    {
+                        _prefabRegistryObject.ApplyModifiedProperties();
+                        _prefabRegistry.RecalculateDefaultPosYAt(i);
                         EditorUtility.SetDirty(_prefabRegistry);
                         _prefabRegistryObject = new SerializedObject(_prefabRegistry);
                         _prefabRegistryObject.Update();
@@ -548,7 +572,7 @@ namespace WFCTechTest.WFC.Editor
                 metadata.Registered = true;
                 metadata.IsGenerated = false;
                 EditorUtility.SetDirty(metadata);
-                AlignTransformBottomToGround(gameObject.transform);
+                AlignTransformUsingRegistry(gameObject.transform, entry);
             }
 
             SetStatus($"Registered {Selection.gameObjects.Length} selected object(s) as obstacle index {type}.");
@@ -580,7 +604,7 @@ namespace WFCTechTest.WFC.Editor
                 metadata.IsUnknownType = false;
                 metadata.Registered = true;
                 EditorUtility.SetDirty(metadata);
-                AlignTransformBottomToGround(gameObject.transform);
+                AlignTransformUsingRegistry(gameObject.transform, entry);
                 changed++;
             }
 
@@ -599,6 +623,8 @@ namespace WFCTechTest.WFC.Editor
             var mapCenter = GetGenerationConfig() != null ? GetGenerationConfig().MapCenter : Vector3.zero;
             foreach (var transform in Selection.transforms)
             {
+                var metadata = transform.GetComponent<ObstacleInstanceMetadata>();
+                var entry = metadata != null ? _prefabRegistry.GetEntry(metadata.Type) : null;
                 Undo.RecordObject(transform, "Snap Obstacles To Grid");
                 var position = transform.position;
                 transform.position = new Vector3(
@@ -607,7 +633,7 @@ namespace WFCTechTest.WFC.Editor
                     SnapAxis(position.z, cell.z, mapCenter.z));
                 var yaw = transform.eulerAngles.y;
                 transform.rotation = Quaternion.Euler(0f, Mathf.Round(yaw / 90f) * 90f, 0f);
-                AlignTransformBottomToGround(transform);
+                AlignTransformUsingRegistry(transform, entry);
             }
 
             SetStatus($"Snapped {Selection.transforms.Length} selected transform(s) to the placement grid.");

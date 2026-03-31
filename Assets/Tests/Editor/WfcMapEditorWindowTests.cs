@@ -57,6 +57,46 @@ namespace WFCTechTest.WFC.Tests.Editor
         }
 
         [Test]
+        public void ImportKnownType_UsesRegistryDefaultPosY()
+        {
+            var window = ScriptableObject.CreateInstance<WfcMapEditorWindow>();
+            var palette = ScriptableObject.CreateInstance<PrefabRegistryAsset>();
+            palette.EnsureDefaultPlaceholders(null);
+            var obstacleRoot = new GameObject("ObstacleRoot").transform;
+            var prefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            prefab.transform.localScale = new Vector3(2f, 3f, 4f);
+            var entry = palette.AddEntry(prefab);
+            entry.Type = 10;
+            entry.Prefab = prefab;
+            entry.UsePlaceholder = false;
+            palette.RefreshDerivedValues();
+
+            typeof(WfcMapEditorWindow).GetField("_prefabRegistry", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(window, palette);
+            typeof(WfcMapEditorWindow).GetField("_placeholderCubePrefab", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(window, null);
+
+            var method = typeof(WfcMapEditorWindow).GetMethod("CreateObstacleInstanceFromInfo", BindingFlags.NonPublic | BindingFlags.Instance);
+            var info = new ObstacleInfo
+            {
+                Type = 10,
+                Pos_X = 1d,
+                Pos_Y = 0d,
+                Pos_Z = 2d,
+                Rot_Y = 90d
+            };
+
+            var instance = method?.Invoke(window, new object[] { info, obstacleRoot }) as GameObject;
+
+            Assert.That(instance, Is.Not.Null);
+            Assert.That(instance.transform.position.y, Is.EqualTo(entry.DefaultPosY + (palette.GetPlacementCellEdge() * 0.5f)).Within(0.001f));
+
+            Object.DestroyImmediate(instance);
+            Object.DestroyImmediate(prefab);
+            Object.DestroyImmediate(obstacleRoot.gameObject);
+            Object.DestroyImmediate(window);
+            Object.DestroyImmediate(palette);
+        }
+
+        [Test]
         public void TryDeserializeObstacleInfo_ReportsFallbackEntryErrors()
         {
             var window = ScriptableObject.CreateInstance<WfcMapEditorWindow>();

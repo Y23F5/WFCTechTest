@@ -31,6 +31,7 @@ namespace WFCTechTest.WFC.Tests.Editor
             entry.UsePlaceholder = false;
             entry.SemanticClass = ObstacleSemanticClass.LowCover;
             palette.RefreshDerivedValues();
+            Assert.That(entry.DefaultPosY, Is.EqualTo(3.5f).Within(0.001f));
 
             var spawnerGo = new GameObject("Spawner");
             var spawner = spawnerGo.AddComponent<ObstacleSceneSpawner>();
@@ -64,6 +65,7 @@ namespace WFCTechTest.WFC.Tests.Editor
 
             var spawned = obstacleRoot.GetChild(0).gameObject;
             Assert.That(spawned.transform.localScale, Is.EqualTo(prefab.transform.localScale));
+            Assert.That(spawned.transform.position.y, Is.EqualTo(entry.DefaultPosY + (palette.GetPlacementCellEdge() * 0.5f)).Within(0.001f));
             Assert.That(TryGetCombinedWorldBounds(spawned, out var spawnedBounds), Is.True);
             Assert.That(spawnedBounds.min.y, Is.EqualTo(palette.GetPlacementCellEdge() * 0.5f).Within(0.001f));
 

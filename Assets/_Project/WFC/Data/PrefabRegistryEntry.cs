@@ -69,6 +69,16 @@ namespace WFCTechTest.WFC.Data
         public bool LogicalHeightLocked;
 
         /// <summary>
+        /// Gets or sets the default pivot Y offset relative to the ground top used when placing this prefab.
+        /// </summary>
+        public float DefaultPosY;
+
+        /// <summary>
+        /// Gets or sets whether the default pivot Y offset has been manually overridden and should no longer auto-refresh.
+        /// </summary>
+        public bool DefaultPosYLocked;
+
+        /// <summary>
         /// Gets or sets the base placement weight.
         /// </summary>
         public float Weight = 1f;

@@ -25,6 +25,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.0000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 1.18
     DenseWeight: 0.92
@@ -47,6 +49,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.5000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 0.9
     DenseWeight: 1.2
@@ -69,6 +73,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.5000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 1.15
     DenseWeight: 0.82
@@ -90,6 +96,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.0000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 0.82
     DenseWeight: 1.25
@@ -111,6 +119,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.0000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 1.18
     DenseWeight: 0.92
@@ -132,6 +142,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.0000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 1.18
     DenseWeight: 0.92
@@ -153,6 +165,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.0000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 1.18
     DenseWeight: 0.92
@@ -174,6 +188,8 @@ MonoBehaviour:
     FootprintDepth: 1
     LogicalHeightCells: 1
     LogicalHeightLocked: 0
+    DefaultPosY: 2.0000002
+    DefaultPosYLocked: 0
     Weight: 1
     SparseWeight: 1.18
     DenseWeight: 0.92

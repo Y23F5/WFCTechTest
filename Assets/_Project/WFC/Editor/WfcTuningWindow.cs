@@ -247,6 +247,28 @@ namespace WFCTechTest.WFC.Editor
                 EditorGUILayout.PropertyField(entry.FindPropertyRelative("CanAppearNearBoundary"), new GUIContent("Near Boundary"));
                 EditorGUILayout.PropertyField(entry.FindPropertyRelative("CanAppearInCenter"), new GUIContent("In Center"));
                 EditorGUILayout.PropertyField(entry.FindPropertyRelative("RequiresClearance"), new GUIContent("Requires Clearance"));
+                var defaultPosYProperty = entry.FindPropertyRelative("DefaultPosY");
+                var defaultPosYLockedProperty = entry.FindPropertyRelative("DefaultPosYLocked");
+                EditorGUI.BeginChangeCheck();
+                var defaultPosY = EditorGUILayout.FloatField(new GUIContent("Default Pos Y"), defaultPosYProperty.floatValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    defaultPosYProperty.floatValue = defaultPosY;
+                    defaultPosYLockedProperty.boolValue = true;
+                }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(defaultPosYLockedProperty.boolValue ? "Y: Manual" : "Y: Auto", EditorStyles.miniLabel);
+                    if (GUILayout.Button("Recalc Y", GUILayout.Width(100f)))
+                    {
+                        _prefabRegistryObject.ApplyModifiedProperties();
+                        _prefabRegistry.RecalculateDefaultPosYAt(i);
+                        EditorUtility.SetDirty(_prefabRegistry);
+                        _prefabRegistryObject = new SerializedObject(_prefabRegistry);
+                        _prefabRegistryObject.Update();
+                        return;
+                    }
+                }
                 if (entry.FindPropertyRelative("RequiresClearance").boolValue)
                 {
                     EditorGUILayout.PropertyField(entry.FindPropertyRelative("ClearanceRadius"), new GUIContent("Clearance Radius"));

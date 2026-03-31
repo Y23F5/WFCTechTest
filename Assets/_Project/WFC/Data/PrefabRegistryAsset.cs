@@ -137,6 +137,11 @@ namespace WFCTechTest.WFC.Data
                 {
                     entry.LogicalHeightCells = Mathf.Max(1, entry.LogicalHeightCells);
                 }
+
+                if (!entry.DefaultPosYLocked)
+                {
+                    entry.DefaultPosY = ComputeDefaultPosY(entry, cellEdge);
+                }
             }
         }
 
@@ -152,6 +157,7 @@ namespace WFCTechTest.WFC.Data
 
             ApplySemanticDefaults(entries[entryIndex], entries[entryIndex].SemanticClass);
             entries[entryIndex].LogicalHeightLocked = false;
+            entries[entryIndex].DefaultPosYLocked = false;
             RefreshDerivedValues();
         }
 
@@ -166,6 +172,20 @@ namespace WFCTechTest.WFC.Data
             }
 
             entries[entryIndex].LogicalHeightLocked = false;
+            RefreshDerivedValues();
+        }
+
+        /// <summary>
+        /// Unlocks and recalculates the default placement Y offset for the entry at the supplied list index.
+        /// </summary>
+        public void RecalculateDefaultPosYAt(int entryIndex)
+        {
+            if (entryIndex < 0 || entryIndex >= entries.Count || entries[entryIndex] == null)
+            {
+                return;
+            }
+
+            entries[entryIndex].DefaultPosYLocked = false;
             RefreshDerivedValues();
         }
 
@@ -244,6 +264,21 @@ namespace WFCTechTest.WFC.Data
             return true;
         }
 
+        /// <summary>
+        /// Returns the combined renderer bounds for the supplied prefab in prefab-root local space.
+        /// </summary>
+        public static bool TryGetCombinedPrefabLocalBounds(GameObject prefab, out Bounds bounds)
+        {
+            bounds = default;
+            if (prefab == null || !TryGetCombinedPrefabBounds(prefab, out var worldBounds))
+            {
+                return false;
+            }
+
+            bounds = new Bounds(worldBounds.center - prefab.transform.position, worldBounds.size);
+            return true;
+        }
+
         private void OnValidate()
         {
             RefreshDerivedValues();
@@ -275,6 +310,7 @@ namespace WFCTechTest.WFC.Data
             entries[entries.Count - 1].AllowRandomYaw = false;
             entries[entries.Count - 1].EnabledForAutoGeneration = true;
             entries[entries.Count - 1].LogicalHeightLocked = false;
+            entries[entries.Count - 1].DefaultPosYLocked = false;
         }
 
         private static void ApplySemanticDefaults(PrefabRegistryEntry entry, ObstacleSemanticClass semanticClass)
@@ -290,6 +326,7 @@ namespace WFCTechTest.WFC.Data
             entry.AllowedHeightMask = -1;
             entry.Weight = 1f;
             entry.LogicalHeightLocked = false;
+            entry.DefaultPosYLocked = false;
 
             switch (semanticClass)
             {
@@ -359,6 +396,17 @@ namespace WFCTechTest.WFC.Data
             }
 
             return Mathf.Max(1, Mathf.CeilToInt(bounds.size.y / cellEdge));
+        }
+
+        private static float ComputeDefaultPosY(PrefabRegistryEntry entry, float cellEdge)
+        {
+            if (entry?.Prefab == null || cellEdge <= 0f || !TryGetCombinedPrefabLocalBounds(entry.Prefab, out var bounds))
+            {
+                return 0f;
+            }
+
+            var groundTopOffset = cellEdge * 0.5f;
+            return groundTopOffset - bounds.min.y;
         }
 
     }

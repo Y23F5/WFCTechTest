@@ -82,6 +82,7 @@ namespace WFCTechTest.WFC.Tests.Editor
             Assert.That(entry.RequiresClearance, Is.False);
             Assert.That(entry.SparseWeight, Is.GreaterThan(1f));
             Assert.That(entry.DenseWeight, Is.LessThan(1f));
+            Assert.That(entry.DefaultPosY, Is.EqualTo(0f));
         }
 
         [Test]
@@ -116,6 +117,34 @@ namespace WFCTechTest.WFC.Tests.Editor
 
             Object.DestroyImmediate(wide.Prefab);
             Object.DestroyImmediate(tall.Prefab);
+        }
+
+        [Test]
+        public void RefreshDerivedValues_RecalculatesUnlockedDefaultPosYAndPreservesLockedOverride()
+        {
+            var palette = ScriptableObject.CreateInstance<PrefabRegistryAsset>();
+            palette.EnsureDefaultPlaceholders(null);
+
+            var entry = palette.AddEntry();
+            entry.Type = 10;
+            entry.Prefab = CreateScaledCube("Grounded", new Vector3(2f, 3f, 4f));
+            entry.UsePlaceholder = false;
+            palette.RefreshDerivedValues();
+
+            Assert.That(entry.DefaultPosY, Is.EqualTo(3.5f).Within(0.001f));
+
+            entry.DefaultPosY = 9f;
+            entry.DefaultPosYLocked = true;
+            entry.Prefab.transform.localScale = new Vector3(2f, 5f, 4f);
+            palette.RefreshDerivedValues();
+
+            Assert.That(entry.DefaultPosY, Is.EqualTo(9f));
+
+            palette.RecalculateDefaultPosYAt(4);
+            Assert.That(entry.DefaultPosYLocked, Is.False);
+            Assert.That(entry.DefaultPosY, Is.EqualTo(4.5f).Within(0.001f));
+
+            Object.DestroyImmediate(entry.Prefab);
         }
 
         private static GameObject CreateScaledCube(string name, Vector3 scale)
