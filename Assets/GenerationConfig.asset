@@ -13,18 +13,21 @@ MonoBehaviour:
   m_Name: GenerationConfig
   m_EditorClassIdentifier: 
   mapCenter: {x: 0, y: 0, z: 0}
-  width: 48
+  width: 15
   height: 8
-  depth: 48
+  depth: 15
   maxRetries: 20
   boundaryWallHeight: 4
   interestAnchorCount: 4
   maxJumpHeight: 1.1
   maxJumpDistance: 2.1
   coverageMetric: 0
-  minGroundCoverage: 0.55
-  maxGroundCoverage: 0.65
+  targetOpenCoverage: 0.891
+  openCoverageTolerance: 0.0483
   minLargestComponentRatio: 0.85
+  legacyMinGroundCoverage: 0.84269994
+  legacyMaxGroundCoverage: 0.9393
+  coverageTargetInitialized: 1
   lowCoverDenseRatio: 0.42
   highCoverDenseRatio: 0.48
   towerDenseRatio: 0.35
