@@ -120,7 +120,7 @@ namespace WFCTechTest.WFC.Tests.Editor
         }
 
         [Test]
-        public void RefreshDerivedValues_RecalculatesUnlockedDefaultPosYAndPreservesLockedOverride()
+        public void RecalculateDefaultPosYAt_ComputesAbsoluteWorldYAndRefreshDoesNotOverride()
         {
             var palette = ScriptableObject.CreateInstance<PrefabRegistryAsset>();
             palette.EnsureDefaultPlaceholders(null);
@@ -131,6 +131,9 @@ namespace WFCTechTest.WFC.Tests.Editor
             entry.UsePlaceholder = false;
             palette.RefreshDerivedValues();
 
+            Assert.That(entry.DefaultPosY, Is.EqualTo(0f));
+
+            palette.RecalculateDefaultPosYAt(4, 2f);
             Assert.That(entry.DefaultPosY, Is.EqualTo(3.5f).Within(0.001f));
 
             entry.DefaultPosY = 9f;
@@ -140,7 +143,11 @@ namespace WFCTechTest.WFC.Tests.Editor
 
             Assert.That(entry.DefaultPosY, Is.EqualTo(9f));
 
-            palette.RecalculateDefaultPosYAt(4);
+            entry.DefaultPosYLocked = false;
+            palette.RefreshDerivedValues();
+            Assert.That(entry.DefaultPosY, Is.EqualTo(9f));
+
+            palette.RecalculateDefaultPosYAt(4, 2f);
             Assert.That(entry.DefaultPosYLocked, Is.False);
             Assert.That(entry.DefaultPosY, Is.EqualTo(4.5f).Within(0.001f));
 

@@ -278,13 +278,11 @@
 
 ### Default Pos Y
 - 类型：`float`
-- 含义：默认 Y 偏移
+- 含义：默认世界坐标 Y
 - 作用：
-  - 决定生成、导入、注册、吸附时该 prefab 的最终 Y 放置偏移
-- 当前使用规则：
-  - 系统会在地面顶面高度基础上叠加该值
+  - 决定生成、导入、注册、吸附时该 prefab 的最终世界空间 Y
 - 默认行为：
-  - 按 prefab 的合并 bounds 自动推导
+  - 按 prefab 的合并 bounds 和当前地面顶面高度自动推导
 
 ### Default Pos Y: Auto / Default Pos Y: Manual
 - 类型：状态标签

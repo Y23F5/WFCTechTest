@@ -70,6 +70,7 @@ namespace WFCTechTest.WFC.Tests.Editor
             entry.Prefab = prefab;
             entry.UsePlaceholder = false;
             palette.RefreshDerivedValues();
+            palette.RecalculateDefaultPosYAt(4, palette.GetPlacementCellEdge() * 0.5f);
 
             typeof(WfcMapEditorWindow).GetField("_prefabRegistry", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(window, palette);
             typeof(WfcMapEditorWindow).GetField("_placeholderCubePrefab", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(window, null);
@@ -87,7 +88,7 @@ namespace WFCTechTest.WFC.Tests.Editor
             var instance = method?.Invoke(window, new object[] { info, obstacleRoot }) as GameObject;
 
             Assert.That(instance, Is.Not.Null);
-            Assert.That(instance.transform.position.y, Is.EqualTo(entry.DefaultPosY + (palette.GetPlacementCellEdge() * 0.5f)).Within(0.001f));
+            Assert.That(instance.transform.position.y, Is.EqualTo(entry.DefaultPosY).Within(0.001f));
 
             Object.DestroyImmediate(instance);
             Object.DestroyImmediate(prefab);

@@ -121,7 +121,7 @@ namespace WFCTechTest.WFC.Unity.Runtime
                     ? Instantiate(prefab, worldPosition, rotation, obstacleRoot)
                     : CreatePrimitiveObstacle(worldPosition, rotation);
                 instance.name = $"Obstacle_{placement.Type}_{placement.Anchor.X}_{placement.Anchor.Z}";
-                if (TryResolveRegistryPlacementY(entry, cellSize, out var placementY))
+                if (TryResolveRegistryPlacementY(entry, out var placementY))
                 {
                     var position = instance.transform.position;
                     instance.transform.position = new Vector3(position.x, placementY, position.z);

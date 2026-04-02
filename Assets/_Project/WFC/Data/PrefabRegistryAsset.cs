@@ -138,10 +138,6 @@ namespace WFCTechTest.WFC.Data
                     entry.LogicalHeightCells = Mathf.Max(1, entry.LogicalHeightCells);
                 }
 
-                if (!entry.DefaultPosYLocked)
-                {
-                    entry.DefaultPosY = ComputeDefaultPosY(entry, cellEdge);
-                }
             }
         }
 
@@ -176,9 +172,9 @@ namespace WFCTechTest.WFC.Data
         }
 
         /// <summary>
-        /// Unlocks and recalculates the default placement Y offset for the entry at the supplied list index.
+        /// Unlocks and recalculates the default placement world Y for the entry at the supplied list index.
         /// </summary>
-        public void RecalculateDefaultPosYAt(int entryIndex)
+        public void RecalculateDefaultPosYAt(int entryIndex, float groundTopY)
         {
             if (entryIndex < 0 || entryIndex >= entries.Count || entries[entryIndex] == null)
             {
@@ -186,7 +182,37 @@ namespace WFCTechTest.WFC.Data
             }
 
             entries[entryIndex].DefaultPosYLocked = false;
-            RefreshDerivedValues();
+            if (TryComputeDefaultPosY(entries[entryIndex], groundTopY, out var defaultPosY))
+            {
+                entries[entryIndex].DefaultPosY = defaultPosY;
+            }
+            else
+            {
+                entries[entryIndex].DefaultPosY = 0f;
+            }
+        }
+
+        /// <summary>
+        /// Recalculates the default placement world Y for every unlocked entry.
+        /// </summary>
+        public void RecalculateUnlockedDefaultPosY(float groundTopY)
+        {
+            foreach (var entry in entries)
+            {
+                if (entry == null || entry.DefaultPosYLocked)
+                {
+                    continue;
+                }
+
+                if (TryComputeDefaultPosY(entry, groundTopY, out var defaultPosY))
+                {
+                    entry.DefaultPosY = defaultPosY;
+                }
+                else
+                {
+                    entry.DefaultPosY = 0f;
+                }
+            }
         }
 
         /// <summary>
@@ -276,6 +302,21 @@ namespace WFCTechTest.WFC.Data
             }
 
             bounds = new Bounds(worldBounds.center - prefab.transform.position, worldBounds.size);
+            return true;
+        }
+
+        /// <summary>
+        /// Computes the default placement world Y for the supplied entry and ground-top height.
+        /// </summary>
+        public static bool TryComputeDefaultPosY(PrefabRegistryEntry entry, float groundTopY, out float defaultPosY)
+        {
+            defaultPosY = 0f;
+            if (entry?.Prefab == null || !TryGetCombinedPrefabLocalBounds(entry.Prefab, out var bounds))
+            {
+                return false;
+            }
+
+            defaultPosY = groundTopY - bounds.min.y;
             return true;
         }
 
@@ -396,17 +437,6 @@ namespace WFCTechTest.WFC.Data
             }
 
             return Mathf.Max(1, Mathf.CeilToInt(bounds.size.y / cellEdge));
-        }
-
-        private static float ComputeDefaultPosY(PrefabRegistryEntry entry, float cellEdge)
-        {
-            if (entry?.Prefab == null || cellEdge <= 0f || !TryGetCombinedPrefabLocalBounds(entry.Prefab, out var bounds))
-            {
-                return 0f;
-            }
-
-            var groundTopOffset = cellEdge * 0.5f;
-            return groundTopOffset - bounds.min.y;
         }
 
     }

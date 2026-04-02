@@ -133,10 +133,10 @@ namespace WFCTechTest.WFC.Editor {
         }
 
         private bool TryGetRegistryAlignedY(PrefabRegistryEntry entry, out float alignedY) {
-            alignedY = GetGroundTopY();
+            alignedY = 0f;
             if (entry == null || !PrefabRegistryAsset.TryGetCombinedPrefabLocalBounds(entry.Prefab, out _)) return false;
 
-            alignedY += entry.DefaultPosY;
+            alignedY = entry.DefaultPosY;
             return true;
         }
 
@@ -150,6 +150,28 @@ namespace WFCTechTest.WFC.Editor {
             }
 
             AlignTransformBottomToGround(transform);
+        }
+
+        private void RecalculateDefaultPosYAt(int entryIndex) {
+            if (_prefabRegistry == null) return;
+
+            _prefabRegistry.RecalculateDefaultPosYAt(entryIndex, GetGroundTopY());
+        }
+
+        private void RecalculateDefaultPosYForEntry(PrefabRegistryEntry entry) {
+            if (_prefabRegistry == null || entry == null) return;
+
+            for (var i = 0; i < _prefabRegistry.Entries.Count; i++) {
+                if (!ReferenceEquals(_prefabRegistry.Entries[i], entry)) continue;
+
+                RecalculateDefaultPosYAt(i);
+                return;
+            }
+        }
+
+        private void RecalculateUnlockedDefaultPosY() {
+            if (_prefabRegistry == null) return;
+            _prefabRegistry.RecalculateUnlockedDefaultPosY(GetGroundTopY());
         }
 
         private void AlignTransformBottomToGround(Transform transform) {

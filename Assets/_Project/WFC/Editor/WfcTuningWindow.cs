@@ -250,7 +250,7 @@ namespace WFCTechTest.WFC.Editor
                 var defaultPosYProperty = entry.FindPropertyRelative("DefaultPosY");
                 var defaultPosYLockedProperty = entry.FindPropertyRelative("DefaultPosYLocked");
                 EditorGUI.BeginChangeCheck();
-                var defaultPosY = EditorGUILayout.FloatField(new GUIContent("Default Pos Y"), defaultPosYProperty.floatValue);
+                var defaultPosY = EditorGUILayout.FloatField(new GUIContent("Default Pos Y (World)"), defaultPosYProperty.floatValue);
                 if (EditorGUI.EndChangeCheck())
                 {
                     defaultPosYProperty.floatValue = defaultPosY;
@@ -258,11 +258,11 @@ namespace WFCTechTest.WFC.Editor
                 }
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField(defaultPosYLockedProperty.boolValue ? "Y: Manual" : "Y: Auto", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField(defaultPosYLockedProperty.boolValue ? "Y(World): Manual" : "Y(World): Auto", EditorStyles.miniLabel);
                     if (GUILayout.Button("Recalc Y", GUILayout.Width(100f)))
                     {
                         _prefabRegistryObject.ApplyModifiedProperties();
-                        _prefabRegistry.RecalculateDefaultPosYAt(i);
+                        _prefabRegistry.RecalculateDefaultPosYAt(i, GetGroundTopY());
                         EditorUtility.SetDirty(_prefabRegistry);
                         _prefabRegistryObject = new SerializedObject(_prefabRegistry);
                         _prefabRegistryObject.Update();
@@ -332,6 +332,13 @@ namespace WFCTechTest.WFC.Editor
             {
                 _prefabRegistryObject = new SerializedObject(_prefabRegistry);
             }
+        }
+
+        private float GetGroundTopY()
+        {
+            var mapCenterY = _generationConfig != null ? _generationConfig.MapCenter.y : 0f;
+            var edge = _prefabRegistry != null ? _prefabRegistry.GetPlacementCellEdge() : 1f;
+            return mapCenterY + (edge * 0.5f);
         }
     }
 }

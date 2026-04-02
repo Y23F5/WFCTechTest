@@ -84,11 +84,11 @@ namespace WFCTechTest.WFC.Unity.Runtime {
             return cellSize.y * 0.5f;
         }
 
-        private bool TryResolveRegistryPlacementY(PrefabRegistryEntry entry, Vector3 cellSize, out float placementY) {
-            placementY = mapCenter.y + GetGroundTopY(cellSize);
+        private bool TryResolveRegistryPlacementY(PrefabRegistryEntry entry, out float placementY) {
+            placementY = 0f;
             if (entry == null || !PrefabRegistryAsset.TryGetCombinedPrefabLocalBounds(entry.Prefab, out _)) return false;
 
-            placementY += entry.DefaultPosY;
+            placementY = entry.DefaultPosY;
             return true;
         }
 

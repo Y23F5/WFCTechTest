@@ -306,6 +306,7 @@ namespace WFCTechTest.WFC.Editor
             }
 
             _prefabRegistry.EnsureDefaultPlaceholders(_placeholderCubePrefab != null ? _placeholderCubePrefab : WfcEditorAssetLocator.LoadDefaultCubePrefab());
+            RecalculateUnlockedDefaultPosY();
             EditorUtility.SetDirty(_prefabRegistry);
             AssetDatabase.SaveAssets();
             SetStatus("Seeded default Prefab Registry entries.");
@@ -320,6 +321,7 @@ namespace WFCTechTest.WFC.Editor
             }
 
             var entry = _prefabRegistry.AddEntry(_placeholderCubePrefab != null ? _placeholderCubePrefab : WfcEditorAssetLocator.LoadDefaultCubePrefab());
+            RecalculateDefaultPosYForEntry(entry);
             EditorUtility.SetDirty(_prefabRegistry);
             AssetDatabase.SaveAssets();
             SetStatus($"Added Prefab Registry entry {entry.Type}.");
@@ -442,6 +444,7 @@ namespace WFCTechTest.WFC.Editor
                 {
                     _prefabRegistryObject.ApplyModifiedProperties();
                     _prefabRegistry.ApplyDefaultsAt(i);
+                    RecalculateDefaultPosYAt(i);
                     EditorUtility.SetDirty(_prefabRegistry);
                     _prefabRegistryObject = new SerializedObject(_prefabRegistry);
                     _prefabRegistryObject.Update();
@@ -463,7 +466,23 @@ namespace WFCTechTest.WFC.Editor
                 }
 
                 EditorGUILayout.PropertyField(nameProperty, new GUIContent("Name"));
+                EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(prefabProperty, new GUIContent("Prefab"));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var shouldRecalculateDefaultPosY = !defaultPosYLockedProperty.boolValue;
+                    _prefabRegistryObject.ApplyModifiedProperties();
+                    _prefabRegistry.RefreshDerivedValues();
+                    if (shouldRecalculateDefaultPosY)
+                    {
+                        RecalculateDefaultPosYAt(i);
+                    }
+
+                    EditorUtility.SetDirty(_prefabRegistry);
+                    _prefabRegistryObject = new SerializedObject(_prefabRegistry);
+                    _prefabRegistryObject.Update();
+                    break;
+                }
                 EditorGUILayout.PropertyField(semanticProperty, new GUIContent("Semantic Class"));
                 EditorGUILayout.PropertyField(weightProperty, new GUIContent("Weight"));
                 EditorGUILayout.PropertyField(autoProperty, new GUIContent("Auto Generate"));
@@ -480,7 +499,7 @@ namespace WFCTechTest.WFC.Editor
                 }
 
                 EditorGUI.BeginChangeCheck();
-                var defaultPosY = EditorGUILayout.FloatField(new GUIContent("Default Pos Y"), defaultPosYProperty.floatValue);
+                var defaultPosY = EditorGUILayout.FloatField(new GUIContent("Default Pos Y (World)"), defaultPosYProperty.floatValue);
                 if (EditorGUI.EndChangeCheck())
                 {
                     defaultPosYProperty.floatValue = defaultPosY;
@@ -503,11 +522,11 @@ namespace WFCTechTest.WFC.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField(defaultPosYLockedProperty.boolValue ? "Default Pos Y: Manual" : "Default Pos Y: Auto", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField(defaultPosYLockedProperty.boolValue ? "Default Pos Y (World): Manual" : "Default Pos Y (World): Auto", EditorStyles.miniLabel);
                     if (GUILayout.Button("Recalc Y", GUILayout.Width(100f)))
                     {
                         _prefabRegistryObject.ApplyModifiedProperties();
-                        _prefabRegistry.RecalculateDefaultPosYAt(i);
+                        RecalculateDefaultPosYAt(i);
                         EditorUtility.SetDirty(_prefabRegistry);
                         _prefabRegistryObject = new SerializedObject(_prefabRegistry);
                         _prefabRegistryObject.Update();
