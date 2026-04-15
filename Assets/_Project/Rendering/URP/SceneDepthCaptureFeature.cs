@@ -97,6 +97,7 @@ namespace WFCTechTest.Rendering {
 
         // 每帧所有相机渲染前：查找真实相机，按需创建/同步隐藏相机
         private void OnBeginFrameRendering(ScriptableRenderContext ctx, Camera[] _) {
+            if (!Application.isPlaying) return;  // 只在 Play Mode 创建隐藏相机
             string[] names = {
                 Coerce(camera1Name, "Camera1"), Coerce(camera2Name, "Camera2"),
                 Coerce(camera3Name, "Camera3"), Coerce(camera4Name, "Camera4")
@@ -116,6 +117,7 @@ namespace WFCTechTest.Rendering {
 
         // 每帧所有相机渲染完毕后：合并 4 个 R32F 深度 RT → 1 张 RGBA packed RT
         private void OnEndFrameRendering(ScriptableRenderContext ctx, Camera[] _) {
+            if (!Application.isPlaying) return;  // 只在 Play Mode 合并
             if (_combineMat == null) return;
 
             bool anyReady = false;
