@@ -9,60 +9,46 @@ Shader "Hidden/SceneDepthCapture"
 
         HLSLINCLUDE
         #pragma target 3.0
+        #pragma multi_compile _ DEBUG_SOLID
 
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
-        struct Attributes
-        {
-            uint vertexID : SV_VertexID;
-        };
+        struct Attributes { uint vertexID : SV_VertexID; };
 
         struct Varyings
         {
             float4 positionCS : SV_POSITION;
-            float2 uv : TEXCOORD0;
+            float2 uv         : TEXCOORD0;
         };
 
         Varyings Vert(Attributes input)
         {
-            Varyings output;
-            output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
-            output.uv = GetFullScreenTriangleTexCoord(input.vertexID);
-            return output;
+            Varyings o;
+            o.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
+            o.uv         = GetFullScreenTriangleTexCoord(input.vertexID);
+            return o;
         }
 
-        float4 FragRaw(Varyings input) : SV_Target
+        float4 Frag(Varyings i) : SV_Target
         {
-            float rawDepth = SampleSceneDepth(input.uv);
-            return float4(rawDepth, rawDepth, rawDepth, 1.0);
-        }
-
-        float4 FragLinear(Varyings input) : SV_Target
-        {
-            float rawDepth = SampleSceneDepth(input.uv);
-            float linearDepth = Linear01Depth(rawDepth, _ZBufferParams);
-            return float4(linearDepth, linearDepth, linearDepth, 1.0);
+            #if defined(DEBUG_SOLID)
+                // DEBUG：写 0.5 验证 pass 是否在运行
+                // 结果全 0 → pass 未执行；看到 0.5 → pass 在跑但深度贴图有问题
+                return float4(0.5, 0.5, 0.5, 0.5);
+            #else
+                float d = SampleSceneDepth(i.uv);
+                return float4(d, d, d, d);  // R32F RT 只读 .r 通道
+            #endif
         }
         ENDHLSL
 
         Pass
         {
-            Name "RawDepth"
-
+            Name "DepthCapture"
             HLSLPROGRAM
             #pragma vertex Vert
-            #pragma fragment FragRaw
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "LinearDepth"
-
-            HLSLPROGRAM
-            #pragma vertex Vert
-            #pragma fragment FragLinear
+            #pragma fragment Frag
             ENDHLSL
         }
     }
