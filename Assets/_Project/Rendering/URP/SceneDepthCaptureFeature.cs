@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -32,6 +33,8 @@ namespace WFCTechTest.Rendering {
         private RenderTexture[] _hiddenColorRTs = new RenderTexture[4];
         private RenderTexture[] _depthRTs       = new RenderTexture[4];
 
+        private List<Camera>[] _hiddenOverlayCameras = new List<Camera>[4];
+
         private RenderTexture _packedRT;
         private RenderTexture _runtimePackedRT;
 
@@ -46,8 +49,10 @@ namespace WFCTechTest.Rendering {
             if (capShader  != null) _captureMat = CoreUtils.CreateEngineMaterial(capShader);
             if (combShader != null) _combineMat = CoreUtils.CreateEngineMaterial(combShader);
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++) {
                 _passes[i] = new SceneDepthCapturePass($"SceneDepthCapture.Ch{i}");
+                _hiddenOverlayCameras[i] = new List<Camera>();
+            }
 
             RenderPipelineManager.beginFrameRendering += OnBeginFrameRendering;
             RenderPipelineManager.endFrameRendering   += OnEndFrameRendering;
@@ -83,7 +88,7 @@ namespace WFCTechTest.Rendering {
 
             if (_runtimePackedRT != null) {
                 _runtimePackedRT.Release();
-                CoreUtils.Destroy(_runtimePackedRT);
+                UnityEngine.Object.DestroyImmediate(_runtimePackedRT);
                 _runtimePackedRT = null;
             }
             _packedRT = null;
@@ -94,30 +99,28 @@ namespace WFCTechTest.Rendering {
         private void OnBeginFrameRendering(ScriptableRenderContext ctx, Camera[] _) {
             if (!Application.isPlaying) return;
 
-            // FindObjectsOfType 返回所有 Camera（含 overlay）
-            // 用名字过滤 + createdThisCall 标记确保每个 channel 每帧只创建一次
             var all = FindObjectsOfType<Camera>();
             var createdThisCall = new bool[4];
 
             for (int i = 0; i < all.Length; i++) {
                 var c = all[i];
                 if (c == null) continue;
-                // 跳过我们自己创建的隐藏相机
                 if (c.name.StartsWith("_DepthCap_")) continue;
 
                 int ch = MatchCameraName(c.name);
                 if (ch < 0) continue;
-                // 已处理过（同一帧内 beginFrameRendering 可能被多次调用）
                 if (createdThisCall[ch]) continue;
 
                 if (_hiddenCameras[ch] == null) {
                     CreateHiddenCamera(ch, c);
                 }
                 SyncCamera(c, _hiddenCameras[ch]);
+
+                SyncOverlays(ch, c);
+
                 createdThisCall[ch] = true;
             }
 
-            // 清理已消失的真实相机对应的隐藏相机
             for (int i = 0; i < 4; i++) {
                 if (!createdThisCall[i]) DestroyHiddenCamera(i);
             }
@@ -166,13 +169,51 @@ namespace WFCTechTest.Rendering {
             data.requiresDepthTexture = true;
 
             _hiddenCameras[i] = cam;
-            if (debugMode) Debug.Log($"[DepthCapture] 创建隐藏相机: {go.name}");
+
+            var realStack = real.GetUniversalAdditionalCameraData().cameraStack;
+            _hiddenOverlayCameras[i].Clear();
+            foreach (var realOv in realStack) {
+                if (realOv == null) continue;
+
+                var ovGo  = new GameObject($"_DepthCap_{real.name}_OV") { hideFlags = HideFlags.DontSave };
+                ovGo.transform.SetParent(go.transform);
+                var ovCam = ovGo.AddComponent<Camera>();
+                ovCam.cullingMask = realOv.cullingMask;
+                ovCam.enabled     = true;
+                SyncCamera(realOv, ovCam);
+
+                var ovData = ovCam.GetUniversalAdditionalCameraData();
+                ovData.renderType = CameraRenderType.Overlay;
+                ovData.SetRenderer(urpRendererIndex);
+
+                data.cameraStack.Add(ovCam);
+                _hiddenOverlayCameras[i].Add(ovCam);
+            }
+
+            if (debugMode) {
+                Debug.Log($"[DepthCapture] Created hidden camera: {go.name}" +
+                          $"  overlays={_hiddenOverlayCameras[i].Count}");
+            }
+        }
+
+        private void SyncOverlays(int i, Camera real) {
+            var realStack = real.GetUniversalAdditionalCameraData().cameraStack;
+            if (realStack.Count != _hiddenOverlayCameras[i].Count) {
+                DestroyHiddenCamera(i);
+                CreateHiddenCamera(i, real);
+                return;
+            }
+            for (int j = 0; j < realStack.Count; j++) {
+                var realOv = realStack[j];
+                var hidOv  = _hiddenOverlayCameras[i][j];
+                if (realOv != null && hidOv != null) SyncCamera(realOv, hidOv);
+            }
         }
 
         private void DestroyHiddenCamera(int i) {
+            _hiddenOverlayCameras[i].Clear();
+
             if (_hiddenCameras[i] != null) {
-                // 用 DestroyImmediate 而非 Destroy：同步从场景移除，
-                // 避免同一帧内 beginFrameRendering 被多次调用时残留 GameObject
                 UnityEngine.Object.DestroyImmediate(_hiddenCameras[i].gameObject);
                 _hiddenCameras[i] = null;
             }
@@ -251,6 +292,8 @@ namespace WFCTechTest.Rendering {
             dst.farClipPlane     = src.farClipPlane;
             dst.orthographic     = src.orthographic;
             dst.orthographicSize = src.orthographicSize;
+            dst.aspect          = src.aspect;
+            dst.rect            = src.rect;
         }
 
         private int IndexOfHiddenCamera(Camera cam) {
