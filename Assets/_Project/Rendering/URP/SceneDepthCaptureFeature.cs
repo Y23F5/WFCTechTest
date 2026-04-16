@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -29,18 +28,14 @@ namespace WFCTechTest.Rendering {
         private Material                _combineMat;
         private SceneDepthCapturePass[] _passes = new SceneDepthCapturePass[4];
 
-        // 每个 channel 的隐藏 Base 相机 + 其 targetTexture
+        // 每个 channel 的隐藏相机及其 targetTexture
         private Camera[]        _hiddenCameras  = new Camera[4];
         private RenderTexture[] _hiddenColorRTs = new RenderTexture[4];
-
-        // 每个 channel 的隐藏 Overlay 相机（与真实相机 cameraStack 对应）
-        private List<Camera>[] _realOverlayCameras   = new List<Camera>[4];
-        private List<Camera>[] _hiddenOverlayCameras = new List<Camera>[4];
 
         // 每个 channel 的中间深度 RT（R32F）
         private RenderTexture[] _depthRTs = new RenderTexture[4];
 
-        // 最终输出 RT（PackedDepth 资产 或 Build 回退 RT）
+        // 最终输出 RT
         private RenderTexture _packedRT;
         private RenderTexture _runtimePackedRT;
 
@@ -55,11 +50,8 @@ namespace WFCTechTest.Rendering {
             if (capShader  != null) _captureMat = CoreUtils.CreateEngineMaterial(capShader);
             if (combShader != null) _combineMat = CoreUtils.CreateEngineMaterial(combShader);
 
-            for (int i = 0; i < 4; i++) {
-                _passes[i]               = new SceneDepthCapturePass($"SceneDepthCapture.Ch{i}");
-                _realOverlayCameras[i]   = new List<Camera>();
-                _hiddenOverlayCameras[i] = new List<Camera>();
-            }
+            for (int i = 0; i < 4; i++)
+                _passes[i] = new SceneDepthCapturePass($"SceneDepthCapture.Ch{i}");
 
             RenderPipelineManager.beginFrameRendering += OnBeginFrameRendering;
             RenderPipelineManager.endFrameRendering   += OnEndFrameRendering;
@@ -111,28 +103,17 @@ namespace WFCTechTest.Rendering {
                 Coerce(camera3Name, "Camera3"), Coerce(camera4Name, "Camera4")
             };
 
-            var all = Camera.allCameras;
+            // 用 FindObjectsOfType 而非 Camera.allCameras，避免找到我们自己的隐藏相机
+            // 隐藏相机的 name 以 "_DepthCap" 开头，过滤掉
+            var all = FindObjectsOfType<Camera>();
             for (int i = 0; i < 4; i++) {
-                Camera real = FindCameraByName(all, names[i]);
-                if (real == null) { DestroyHiddenCamera(i); continue; }
-
-                var realStack = real.GetUniversalAdditionalCameraData().cameraStack;
-
-                // 首次创建，或 Overlay 堆栈发生变化时重建
-                if (_hiddenCameras[i] == null || OverlayStackChanged(i, realStack)) {
+                Camera real = FindRealCameraByName(all, names[i]);
+                if (real == null) {
                     DestroyHiddenCamera(i);
-                    CreateHiddenCamera(i, real, realStack);
+                    continue;
                 }
-
-                // 每帧同步 Base 相机变换
+                if (_hiddenCameras[i] == null) CreateHiddenCamera(i, real);
                 SyncCamera(real, _hiddenCameras[i]);
-
-                // 每帧同步 Overlay 相机变换
-                for (int j = 0; j < _realOverlayCameras[i].Count; j++) {
-                    var ro = _realOverlayCameras[i][j];
-                    var ho = _hiddenOverlayCameras[i][j];
-                    if (ro != null && ho != null) SyncCamera(ro, ho);
-                }
             }
         }
 
@@ -158,8 +139,7 @@ namespace WFCTechTest.Rendering {
 
         // ── 隐藏相机管理 ──────────────────────────────────────────────────────
 
-        private void CreateHiddenCamera(int i, Camera real, IList<Camera> realStack) {
-            // Base 相机的 targetTexture（需要 depth=24，URP 才会生成 _CameraDepthTexture）
+        private void CreateHiddenCamera(int i, Camera real) {
             _hiddenColorRTs[i] = new RenderTexture(
                 Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height), 24) {
                 hideFlags = HideFlags.DontSave,
@@ -175,50 +155,15 @@ namespace WFCTechTest.Rendering {
             cam.enabled         = true;
             SyncCamera(real, cam);
 
-            var baseData = cam.GetUniversalAdditionalCameraData();
-            baseData.SetRenderer(urpRendererIndex);
-            baseData.requiresDepthTexture = true;
+            var data = cam.GetUniversalAdditionalCameraData();
+            data.SetRenderer(urpRendererIndex);
+            data.requiresDepthTexture = true;
 
             _hiddenCameras[i] = cam;
-
-            // 为源相机的每个 Overlay 创建对应的隐藏 Overlay 相机
-            _realOverlayCameras[i].Clear();
-            _hiddenOverlayCameras[i].Clear();
-
-            foreach (var realOverlay in realStack) {
-                if (realOverlay == null) continue;
-
-                var ovGo  = new GameObject($"_DepthCap_{realOverlay.name}_OV")
-                    { hideFlags = HideFlags.DontSave };
-                ovGo.transform.SetParent(go.transform);
-
-                var ovCam = ovGo.AddComponent<Camera>();
-                ovCam.cullingMask = realOverlay.cullingMask;   // 与 Overlay 源相机一致
-                ovCam.enabled     = true;
-                SyncCamera(realOverlay, ovCam);
-
-                var ovData = ovCam.GetUniversalAdditionalCameraData();
-                ovData.renderType  = CameraRenderType.Overlay;
-                ovData.SetRenderer(urpRendererIndex);
-
-                // 加入隐藏 Base 相机的 stack
-                baseData.cameraStack.Add(ovCam);
-
-                _realOverlayCameras[i].Add(realOverlay);
-                _hiddenOverlayCameras[i].Add(ovCam);
-            }
-
-            if (debugMode) {
-                Debug.Log($"[DepthCapture] 创建隐藏相机: {go.name}" +
-                          $"  overlays={_hiddenOverlayCameras[i].Count}");
-            }
+            if (debugMode) Debug.Log($"[DepthCapture] 创建隐藏相机: {go.name}");
         }
 
         private void DestroyHiddenCamera(int i) {
-            // 先清 Overlay 列表（子 GameObject 随 Base 一起销毁）
-            _realOverlayCameras[i].Clear();
-            _hiddenOverlayCameras[i].Clear();
-
             if (_hiddenCameras[i] != null) {
                 CoreUtils.Destroy(_hiddenCameras[i].gameObject);
                 _hiddenCameras[i] = null;
@@ -228,14 +173,6 @@ namespace WFCTechTest.Rendering {
                 CoreUtils.Destroy(_hiddenColorRTs[i]);
                 _hiddenColorRTs[i] = null;
             }
-        }
-
-        // 检测 Overlay 堆栈是否变化（数量或内容）
-        private bool OverlayStackChanged(int i, IList<Camera> realStack) {
-            if (realStack.Count != _realOverlayCameras[i].Count) return true;
-            for (int j = 0; j < realStack.Count; j++)
-                if (realStack[j] != _realOverlayCameras[i][j]) return true;
-            return false;
         }
 
         private void EnsureDepthRT(int i, in CameraData cd) {
@@ -308,16 +245,20 @@ namespace WFCTechTest.Rendering {
             dst.orthographicSize = src.orthographicSize;
         }
 
-        // 只匹配隐藏 Base 相机（Overlay 不直接触发 pass）
         private int IndexOfHiddenCamera(Camera cam) {
             for (int i = 0; i < 4; i++)
                 if (_hiddenCameras[i] == cam) return i;
             return -1;
         }
 
-        private static Camera FindCameraByName(Camera[] all, string name) {
-            foreach (var c in all)
-                if (c != null && c.name == name) return c;
+        // 用 FindObjectsOfType 找真实相机（排除 _DepthCap_ 前缀的隐藏相机）
+        private static Camera FindRealCameraByName(Camera[] all, string name) {
+            foreach (var c in all) {
+                if (c == null) continue;
+                // 跳过我们自己创建的隐藏相机
+                if (c.name.StartsWith("_DepthCap_")) continue;
+                if (c.name == name) return c;
+            }
             return null;
         }
 
