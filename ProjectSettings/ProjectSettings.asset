@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 27
-  productGUID: 00000000000000000000000000000000
+  productGUID: 615411ffba2847243b328e127afd6042
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -939,7 +939,7 @@ PlayerSettings:
   cloudProjectId: c3b32926-d6af-4423-8c1e-c3cdff8dd093
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Fusion Character
+  projectName: WFCTechTest
   organizationId: y23f5
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0

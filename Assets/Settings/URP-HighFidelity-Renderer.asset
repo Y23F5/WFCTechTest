@@ -149,6 +149,11 @@ MonoBehaviour:
   m_Name: SceneDepthCaptureFeature
   m_EditorClassIdentifier: 
   m_Active: 1
+  camera1Name: Camera1
+  camera2Name: Camera2
+  camera3Name: Camera3
+  camera4Name: Camera4
   depthCaptureShader: {fileID: 4800000, guid: 12c03a06bf7848146bccec957d0585f3, type: 3}
-  rawDepthTexture: {fileID: 8400000, guid: a5a84dcd87dd64c4399cffe971aca6ef, type: 2}
-  linearDepthTexture: {fileID: 8400000, guid: cbe305113d8c5534eb86e28e8a4bbf07, type: 2}
+  combineShader: {fileID: 0}
+  debugMode: 0
+  urpRendererIndex: 0
