@@ -94,13 +94,11 @@ namespace WFCTechTest.Rendering {
         private void OnBeginFrameRendering(ScriptableRenderContext ctx, Camera[] _) {
             if (!Application.isPlaying) return;
 
-            // Camera.allCameras 由 URP 管理，每帧只返回当前渲染的所有 Game 相机。
-            // 用名字过滤排除我们自己的隐藏相机（_DepthCap_ 前缀）。
-            // 注意：overlay 相机不会出现在 Camera.allCameras 里
-            // （Camera.allCameras 只包含 cameraType == Game 的相机，
-            // overlay 相机的 cameraType 依然是 Game 但它们属于 base 相机的 stack，
-            // URP 内部处理，不在 allCameras 列表中暴露）。
-            var all = Camera.allCameras;
+            // FindObjectsOfType 返回所有 Camera（含 overlay）
+            // 用名字过滤 + createdThisCall 标记确保每个 channel 每帧只创建一次
+            var all = FindObjectsOfType<Camera>();
+            var createdThisCall = new bool[4];
+
             for (int i = 0; i < all.Length; i++) {
                 var c = all[i];
                 if (c == null) continue;
@@ -109,10 +107,19 @@ namespace WFCTechTest.Rendering {
 
                 int ch = MatchCameraName(c.name);
                 if (ch < 0) continue;
+                // 已处理过（同一帧内 beginFrameRendering 可能被多次调用）
+                if (createdThisCall[ch]) continue;
 
-                if (_hiddenCameras[ch] == null)
+                if (_hiddenCameras[ch] == null) {
                     CreateHiddenCamera(ch, c);
+                }
                 SyncCamera(c, _hiddenCameras[ch]);
+                createdThisCall[ch] = true;
+            }
+
+            // 清理已消失的真实相机对应的隐藏相机
+            for (int i = 0; i < 4; i++) {
+                if (!createdThisCall[i]) DestroyHiddenCamera(i);
             }
         }
 
@@ -164,12 +171,14 @@ namespace WFCTechTest.Rendering {
 
         private void DestroyHiddenCamera(int i) {
             if (_hiddenCameras[i] != null) {
-                CoreUtils.Destroy(_hiddenCameras[i].gameObject);
+                // 用 DestroyImmediate 而非 Destroy：同步从场景移除，
+                // 避免同一帧内 beginFrameRendering 被多次调用时残留 GameObject
+                UnityEngine.Object.DestroyImmediate(_hiddenCameras[i].gameObject);
                 _hiddenCameras[i] = null;
             }
             if (_hiddenColorRTs[i] != null) {
                 _hiddenColorRTs[i].Release();
-                CoreUtils.Destroy(_hiddenColorRTs[i]);
+                UnityEngine.Object.DestroyImmediate(_hiddenColorRTs[i]);
                 _hiddenColorRTs[i] = null;
             }
         }
@@ -182,7 +191,7 @@ namespace WFCTechTest.Rendering {
 
             if (_depthRTs[i] != null) {
                 _depthRTs[i].Release();
-                CoreUtils.Destroy(_depthRTs[i]);
+                UnityEngine.Object.DestroyImmediate(_depthRTs[i]);
             }
             _depthRTs[i] = new RenderTexture(size.x, size.y, 0, RenderTextureFormat.RFloat) {
                 hideFlags  = HideFlags.DontSave,
@@ -210,7 +219,7 @@ namespace WFCTechTest.Rendering {
                     _runtimePackedRT.height != h) {
                     if (_runtimePackedRT != null) {
                         _runtimePackedRT.Release();
-                        CoreUtils.Destroy(_runtimePackedRT);
+                        UnityEngine.Object.DestroyImmediate(_runtimePackedRT);
                     }
                     _runtimePackedRT = new RenderTexture(w, h, 0,
                         GraphicsFormat.R32G32B32A32_SFloat) {
