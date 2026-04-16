@@ -2,10 +2,17 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace WFCTechTest.Rendering {
     public sealed class SceneDepthCaptureFeature : ScriptableRendererFeature {
         public const string PackedDepthGlobalTexture = "_CapturedPackedDepthTexture";
+
+        // 输出 RT 资产路径（固定，无需拖拽）
+        private const string PackedDepthAssetPath =
+            "Assets/_Project/Rendering/RenderTextures/PackedDepth.renderTexture";
 
         // 与场景相机名对应（有默认值，通常不需要修改）
         [SerializeField] private string camera1Name = "Camera1";
@@ -14,17 +21,13 @@ namespace WFCTechTest.Rendering {
         [SerializeField] private string camera4Name = "Camera4";
 
         // Shader 字段可选：留空则自动 Shader.Find 回退
-        [SerializeField] private Shader        depthCaptureShader;
-        [SerializeField] private Shader        combineShader;
+        [SerializeField] private Shader depthCaptureShader;
+        [SerializeField] private Shader combineShader;
 
-        [SerializeField] private bool          useHalfPrecision = true;
-        [SerializeField] private bool          debugMode        = false;
-
-        // 可选：指定输出 RT 资产。留空 = 运行时自动按屏幕尺寸创建。
-        [SerializeField] private RenderTexture outputPackedRT;
+        [SerializeField] private bool debugMode = false;
 
         // 含 SceneDepthCaptureFeature 的 Renderer 序号（通常为 0）
-        [SerializeField] private int           urpRendererIndex = 0;
+        [SerializeField] private int urpRendererIndex = 0;
 
         private Material               _captureMat;
         private Material               _combineMat;
@@ -34,7 +37,10 @@ namespace WFCTechTest.Rendering {
         private Camera[]        _hiddenCameras  = new Camera[4];
         private RenderTexture[] _hiddenColorRTs = new RenderTexture[4];
         private RenderTexture[] _depthRTs       = new RenderTexture[4];
-        private RenderTexture   _runtimePackedRT;
+
+        // 输出 RT：指向 PackedDepth 资产（Editor），或内存 RT（Build）
+        private RenderTexture _packedRT;
+        private RenderTexture _runtimePackedRT;   // 仅 Build 时由我们创建，需自行销毁
 
         // ── Unity 生命周期 ────────────────────────────────────────────────────
 
@@ -52,7 +58,6 @@ namespace WFCTechTest.Rendering {
             for (int i = 0; i < 4; i++)
                 _passes[i] = new SceneDepthCapturePass($"SceneDepthCapture.Ch{i}");
 
-            // 订阅 URP 帧事件（主线程，可直接调 Graphics API）
             RenderPipelineManager.beginFrameRendering += OnBeginFrameRendering;
             RenderPipelineManager.endFrameRendering   += OnEndFrameRendering;
         }
@@ -62,7 +67,6 @@ namespace WFCTechTest.Rendering {
             var cam = renderingData.cameraData.camera;
             if (!ShouldExecute(renderingData.cameraData)) return;
 
-            // 只对我们自己创建的隐藏相机入队
             int ch = IndexOfHiddenCamera(cam);
             if (ch < 0) return;
 
@@ -86,38 +90,36 @@ namespace WFCTechTest.Rendering {
 
             for (int i = 0; i < 4; i++) DestroyHiddenCamera(i);
 
+            // 只销毁我们自己创建的运行时 RT；资产 RT 不由我们管理
             if (_runtimePackedRT != null) {
                 _runtimePackedRT.Release();
                 CoreUtils.Destroy(_runtimePackedRT);
                 _runtimePackedRT = null;
             }
+            _packedRT = null;
         }
 
         // ── 事件回调 ──────────────────────────────────────────────────────────
 
-        // 每帧所有相机渲染前：查找真实相机，按需创建/同步隐藏相机
         private void OnBeginFrameRendering(ScriptableRenderContext ctx, Camera[] _) {
-            if (!Application.isPlaying) return;  // 只在 Play Mode 创建隐藏相机
+            if (!Application.isPlaying) return;
+
             string[] names = {
                 Coerce(camera1Name, "Camera1"), Coerce(camera2Name, "Camera2"),
                 Coerce(camera3Name, "Camera3"), Coerce(camera4Name, "Camera4")
             };
 
-            var all = Camera.allCameras;   // 所有启用的 Game 相机
+            var all = Camera.allCameras;
             for (int i = 0; i < 4; i++) {
                 Camera real = FindCameraByName(all, names[i]);
-                if (real == null) {
-                    DestroyHiddenCamera(i);
-                    continue;
-                }
+                if (real == null) { DestroyHiddenCamera(i); continue; }
                 if (_hiddenCameras[i] == null) CreateHiddenCamera(i, real);
                 SyncCamera(real, _hiddenCameras[i]);
             }
         }
 
-        // 每帧所有相机渲染完毕后：合并 4 个 R32F 深度 RT → 1 张 RGBA packed RT
         private void OnEndFrameRendering(ScriptableRenderContext ctx, Camera[] _) {
-            if (!Application.isPlaying) return;  // 只在 Play Mode 合并
+            if (!Application.isPlaying) return;
             if (_combineMat == null) return;
 
             bool anyReady = false;
@@ -129,16 +131,62 @@ namespace WFCTechTest.Rendering {
             }
             if (!anyReady) return;
 
-            var rt = outputPackedRT ?? EnsureRuntimePackedRT();
+            var rt = GetPackedRT();
+            if (rt == null) return;
+
             Graphics.Blit(null, rt, _combineMat);
             Shader.SetGlobalTexture(PackedDepthGlobalTexture, rt);
+        }
+
+        // ── 输出 RT 管理 ──────────────────────────────────────────────────────
+
+        // 获取输出 RT，按 Screen 尺寸自动 resize。
+        // Editor：加载 PackedDepth 资产并 resize。
+        // Build：使用内存 RT（HideFlags.DontSave）。
+        private RenderTexture GetPackedRT() {
+            int w = Mathf.Max(1, Screen.width);
+            int h = Mathf.Max(1, Screen.height);
+
+#if UNITY_EDITOR
+            if (_packedRT == null)
+                _packedRT = AssetDatabase.LoadAssetAtPath<RenderTexture>(PackedDepthAssetPath);
+#endif
+
+            if (_packedRT == null) {
+                // Build 回退：使用运行时 RT
+                if (_runtimePackedRT == null ||
+                    _runtimePackedRT.width  != w ||
+                    _runtimePackedRT.height != h) {
+                    if (_runtimePackedRT != null) {
+                        _runtimePackedRT.Release();
+                        CoreUtils.Destroy(_runtimePackedRT);
+                    }
+                    _runtimePackedRT = new RenderTexture(w, h, 0,
+                        GraphicsFormat.R32G32B32A32_SFloat) {
+                        name       = "PackedDepth_Runtime",
+                        filterMode = FilterMode.Point,
+                        wrapMode   = TextureWrapMode.Clamp,
+                        hideFlags  = HideFlags.DontSave
+                    };
+                    _runtimePackedRT.Create();
+                }
+                _packedRT = _runtimePackedRT;
+            }
+
+            // 按 Screen 尺寸自动 resize
+            if (_packedRT.width != w || _packedRT.height != h || !_packedRT.IsCreated()) {
+                _packedRT.Release();
+                _packedRT.width  = w;
+                _packedRT.height = h;
+                _packedRT.Create();
+            }
+
+            return _packedRT;
         }
 
         // ── 隐藏相机管理 ──────────────────────────────────────────────────────
 
         private void CreateHiddenCamera(int i, Camera real) {
-            // 带 depth=24 的颜色 RT，作为隐藏相机的 targetTexture
-            // depth buffer 必须存在，URP 才能正确生成 _CameraDepthTexture
             _hiddenColorRTs[i] = new RenderTexture(
                 Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height), 24) {
                 hideFlags = HideFlags.DontSave,
@@ -147,7 +195,7 @@ namespace WFCTechTest.Rendering {
 
             var go  = new GameObject($"_DepthCap_{real.name}") { hideFlags = HideFlags.DontSave };
             var cam = go.AddComponent<Camera>();
-            cam.clearFlags      = CameraClearFlags.SolidColor;  // 不渲染天空盒，节省开销
+            cam.clearFlags      = CameraClearFlags.SolidColor;
             cam.backgroundColor = Color.black;
             cam.targetTexture   = _hiddenColorRTs[i];
             cam.cullingMask     = real.cullingMask;
@@ -156,7 +204,7 @@ namespace WFCTechTest.Rendering {
 
             var data = cam.GetUniversalAdditionalCameraData();
             data.SetRenderer(urpRendererIndex);
-            data.requiresDepthTexture = true;  // 确保 _CameraDepthTexture 生成
+            data.requiresDepthTexture = true;
 
             _hiddenCameras[i] = cam;
             if (debugMode) Debug.Log($"[DepthCapture] 创建隐藏相机: {go.name}");
@@ -192,34 +240,6 @@ namespace WFCTechTest.Rendering {
                 wrapMode   = TextureWrapMode.Clamp
             };
             _depthRTs[i].Create();
-        }
-
-        private RenderTexture EnsureRuntimePackedRT() {
-            int w = Mathf.Max(1, Screen.width), h = Mathf.Max(1, Screen.height);
-            if (_runtimePackedRT != null &&
-                _runtimePackedRT.width  == w &&
-                _runtimePackedRT.height == h)
-                return _runtimePackedRT;
-
-            if (_runtimePackedRT != null) {
-                _runtimePackedRT.Release();
-                CoreUtils.Destroy(_runtimePackedRT);
-            }
-
-            var fmt = useHalfPrecision
-                ? GraphicsFormat.R16G16B16A16_SFloat
-                : GraphicsFormat.R32G32B32A32_SFloat;
-
-            _runtimePackedRT = new RenderTexture(w, h, 0, fmt) {
-                name        = "PackedSceneDepth_Runtime",
-                filterMode  = FilterMode.Point,
-                wrapMode    = TextureWrapMode.Clamp,
-                hideFlags   = HideFlags.DontSave,
-                useMipMap   = false,
-                autoGenerateMips = false
-            };
-            _runtimePackedRT.Create();
-            return _runtimePackedRT;
         }
 
         // ── 工具函数 ──────────────────────────────────────────────────────────
